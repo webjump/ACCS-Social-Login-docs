@@ -367,8 +367,6 @@ If you encounter problems during installation:
    - In Adobe Exchange, you can access application logs
    - Look for errors related to Social Login actions
   
-<video src="https://github.com/webjump/ACCS-Social-Login-docs/raw/main/videos/example_video.webm" controls="controls" style="max-width: 100%;">
-</video>
 
 ## 🎉 Done!
 
