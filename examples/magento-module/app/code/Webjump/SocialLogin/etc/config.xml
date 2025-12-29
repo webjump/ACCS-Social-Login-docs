@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Webjump. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <webjump_social_login>
+            <general>
+                <enabled>0</enabled>
+                <api_endpoint>https://your-domain.adobe.io/api/v1/social-login</api_endpoint>
+                <api_base_endpoint>https://your-domain.adobe.io</api_base_endpoint>
+            </general>
+            <providers>
+                <google_enabled>1</google_enabled>
+                <meta_enabled>1</meta_enabled>
+            </providers>
+            <design>
+                <theme>light</theme>
+                <button_size>medium</button_size>
+                <show_labels>1</show_labels>
+                <position>after_form</position>
+            </design>
+            <advanced>
+                <redirect_url></redirect_url>
+                <debug_mode>0</debug_mode>
+                <auto_create_customer>1</auto_create_customer>
+            </advanced>
+        </webjump_social_login>
+    </default>
+</config>

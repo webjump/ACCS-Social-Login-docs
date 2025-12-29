@@ -1,0 +1,218 @@
+<?php
+/**
+ * Copyright © Webjump. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
+/** @var \Webjump\SocialLogin\Block\Login $block */
+/** @var \Magento\Framework\Escaper $escaper */
+
+if (!$block->isEnabled() || !$block->hasEnabledProviders()) {
+    return;
+}
+
+$position = $block->getPosition();
+$containerId = 'webjump-social-login-widget-' . rand(1000, 9999);
+?>
+
+<div class="<?= $escaper->escapeHtmlAttr($block->getContainerCssClass()) ?>"
+     data-position="<?= $escaper->escapeHtmlAttr($position) ?>">
+
+    <?php if ($position === 'before_form'): ?>
+        <div class="social-login-title">
+            <h3><?= $escaper->escapeHtml(__('Login com suas Redes Sociais')) ?></h3>
+        </div>
+    <?php endif; ?>
+
+    <?php if ($position !== 'replace_form'): ?>
+        <div class="social-login-divider">
+            <span><?= $escaper->escapeHtml(__('ou continue com')) ?></span>
+        </div>
+    <?php endif; ?>
+
+    <!-- Social Login Widget Container -->
+    <div id="<?= $escaper->escapeHtmlAttr($containerId) ?>" class="social-login-widget-container"></div>
+
+    <!-- Messages Container -->
+    <div id="social-login-messages" class="social-login-messages"></div>
+
+    <?php if ($position === 'after_form'): ?>
+        <div class="social-login-footer">
+            <p class="social-login-help">
+                <?= $escaper->escapeHtml(__('Conecte-se facilmente usando suas contas existentes')) ?>
+            </p>
+        </div>
+    <?php endif; ?>
+
+</div>
+
+<!-- Load Social Login Widget Script -->
+<script>
+require(['jquery', 'domReady!'], function($) {
+    'use strict';
+
+    // Widget configuration from Adobe Commerce admin
+    var widgetConfig = <?= /* @noEscape */ $block->getWidgetConfigJson() ?>;
+    widgetConfig.containerId = '<?= $escaper->escapeJs($containerId) ?>';
+
+    // Enhanced success callback with Commerce integration
+    widgetConfig.onSuccess = function(data) {
+        console.log('Social login successful:', data);
+
+        // Safe provider name extraction with defensive programming
+        var provider = data.socialProvider || data.provider || 'Social Provider';
+        var providerName = typeof provider === 'string'
+            ? provider.charAt(0).toUpperCase() + provider.slice(1)
+            : 'Social Provider';
+
+        showMessage('✅ Login realizado com sucesso via ' + providerName + '!', 'success');
+
+        // Store token if available
+        if (data.token) {
+            sessionStorage.setItem('customer_token', data.token);
+        }
+
+        // Redirect based on configuration or default
+        var redirectUrl = widgetConfig.redirectUrl || '<?= $escaper->escapeJs($block->getUrl('customer/account/')) ?>';
+
+        setTimeout(function() {
+            window.location.href = redirectUrl;
+        }, 1500);
+    };
+
+    // Enhanced error callback
+    widgetConfig.onError = function(error) {
+        console.error('Social login failed:', error);
+
+        var errorMessages = {
+            'network_error': '<?= $escaper->escapeJs(__('Erro de conexão. Verifique sua internet.')) ?>',
+            'auth_cancelled': '<?= $escaper->escapeJs(__('Login cancelado pelo usuário.')) ?>',
+            'invalid_credentials': '<?= $escaper->escapeJs(__('Credenciais inválidas. Tente novamente.')) ?>',
+            'server_error': '<?= $escaper->escapeJs(__('Erro no servidor. Tente novamente mais tarde.')) ?>'
+        };
+
+        var userMessage = errorMessages[error.code] || error.message;
+        showMessage('❌ ' + userMessage, 'error');
+    };
+
+    // Load widget using enhanced loader from Helper
+    <?= /* @noEscape */ $block->getSocialLoginHelper()->getWidgetLoaderScript() ?>
+
+    // Initialize widget with config
+    loadSocialLoginWidget(widgetConfig);
+
+    // Helper function to show messages
+    function showMessage(text, type) {
+        var messagesContainer = document.getElementById('social-login-messages');
+        if (!messagesContainer) return;
+
+        var messageDiv = document.createElement('div');
+        messageDiv.className = 'message ' + type;
+        messageDiv.innerHTML = '<div>' + text + '</div>';
+
+        messagesContainer.innerHTML = '';
+        messagesContainer.appendChild(messageDiv);
+
+        // Auto-remove after 5 seconds
+        setTimeout(function() {
+            if (messageDiv.parentNode) {
+                messageDiv.remove();
+            }
+        }, 5000);
+    }
+});
+</script>
+
+<style>
+.webjump-social-login-container {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.webjump-social-login-container .social-login-title h3 {
+    color: #333;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.webjump-social-login-container .social-login-divider {
+    position: relative;
+    margin: 20px 0;
+    color: #666;
+    font-size: 14px;
+}
+
+.webjump-social-login-container .social-login-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #ddd;
+}
+
+.webjump-social-login-container .social-login-divider span {
+    background: white;
+    padding: 0 15px;
+    position: relative;
+}
+
+.webjump-social-login-container .social-login-messages {
+    margin-top: 15px;
+}
+
+.webjump-social-login-container .social-login-messages .message {
+    padding: 12px 15px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.webjump-social-login-container .social-login-messages .message.success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.webjump-social-login-container .social-login-messages .message.error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.webjump-social-login-container .social-login-footer {
+    margin-top: 15px;
+}
+
+.webjump-social-login-container .social-login-help {
+    color: #666;
+    font-size: 12px;
+    margin: 0;
+}
+
+/* Theme variations */
+.webjump-social-login-container.theme-dark {
+    background: #333;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.webjump-social-login-container.theme-dark .social-login-divider span {
+    background: #333;
+    color: #ccc;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .webjump-social-login-container {
+        margin: 15px 0;
+    }
+
+    .webjump-social-login-container .social-login-title h3 {
+        font-size: 16px;
+    }
+}
+</style>

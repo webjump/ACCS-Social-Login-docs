@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Webjump. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="webjump" translate="label" sortOrder="200">
+            <label>Webjump</label>
+        </tab>
+        <section id="webjump_social_login" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Social Login</label>
+            <tab>webjump</tab>
+            <resource>Webjump_SocialLogin::config</resource>
+
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Configurações Gerais</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Habilitar Social Login</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>webjump_social_login/general/enabled</config_path>
+                </field>
+                <field id="api_endpoint" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>API Endpoint</label>
+                    <comment>URL do Adobe App Builder Social Login (ex: https://your-domain.adobe.io/api/v1/web/social-login)</comment>
+                    <config_path>webjump_social_login/general/api_endpoint</config_path>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+                <field id="api_base_endpoint" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>API Base Endpoint</label>
+                    <comment>URL base do Adobe App Builder Social Login (ex: https://your-domain.adobe.io)</comment>
+                    <config_path>webjump_social_login/general/api_base_endpoint</config_path>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
+            </group>
+
+            <group id="providers" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Provedores OAuth</label>
+                <depends>
+                    <field id="general/enabled">1</field>
+                </depends>
+
+                <field id="google_enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Google</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>webjump_social_login/providers/google_enabled</config_path>
+                </field>
+
+                <field id="meta_enabled" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Meta/Facebook</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>webjump_social_login/providers/meta_enabled</config_path>
+                </field>
+            </group>
+
+            <group id="design" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Aparência</label>
+                <depends>
+                    <field id="general/enabled">1</field>
+                </depends>
+
+                <field id="theme" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Tema</label>
+                    <source_model>Webjump\SocialLogin\Model\Config\Source\Theme</source_model>
+                    <config_path>webjump_social_login/design/theme</config_path>
+                </field>
+
+                <field id="button_size" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Tamanho dos Botões</label>
+                    <source_model>Webjump\SocialLogin\Model\Config\Source\ButtonSize</source_model>
+                    <config_path>webjump_social_login/design/button_size</config_path>
+                </field>
+
+                <field id="show_labels" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Exibir Labels dos Provedores</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>webjump_social_login/design/show_labels</config_path>
+                </field>
+
+                <field id="position" translate="label" type="select" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Posição na Página de Login</label>
+                    <source_model>Webjump\SocialLogin\Model\Config\Source\Position</source_model>
+                    <config_path>webjump_social_login/design/position</config_path>
+                    <comment>Onde exibir os botões de social login</comment>
+                </field>
+            </group>
+
+            <group id="advanced" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Configurações Avançadas</label>
+                <depends>
+                    <field id="general/enabled">1</field>
+                </depends>
+
+                <field id="redirect_url" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>URL de Redirecionamento</label>
+                    <comment>URL para onde o usuário será redirecionado após login bem-sucedido (deixe vazio para página da conta)</comment>
+                    <config_path>webjump_social_login/advanced/redirect_url</config_path>
+                </field>
+
+                <field id="debug_mode" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Modo Debug</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>webjump_social_login/advanced/debug_mode</config_path>
+                    <comment>Ativar logs detalhados (apenas para desenvolvimento)</comment>
+                </field>
+
+                <field id="auto_create_customer" translate="label" type="select" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Criar Cliente Automaticamente</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <config_path>webjump_social_login/advanced/auto_create_customer</config_path>
+                    <comment>Criar automaticamente cliente no primeiro login social</comment>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>

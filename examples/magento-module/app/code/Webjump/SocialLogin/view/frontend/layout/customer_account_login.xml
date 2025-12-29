@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Webjump. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="customer.login.container">
+            <block class="Webjump\SocialLogin\Block\Login"
+                   name="webjump.social.login"
+                   template="Webjump_SocialLogin::login.phtml"
+                   after="-">
+                <arguments>
+                    <argument name="cache_lifetime" xsi:type="number">86400</argument>
+                    <argument name="cache_tags" xsi:type="array">
+                        <item name="webjump_social_login" xsi:type="string">webjump_social_login</item>
+                    </argument>
+                </arguments>
+            </block>
+        </referenceContainer>
+    </body>
+</page>

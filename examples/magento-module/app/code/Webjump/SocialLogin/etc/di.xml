@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Webjump. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- JWT Authentication Service -->
+    <preference for="Webjump\SocialLogin\Api\JwtAuthenticationInterface" type="Webjump\SocialLogin\Model\JwtAuthentication" />
+</config>

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integração Avançada - Social Login com Configuração Dinâmica</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .config-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-panel {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 30px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .apply-btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+
+        .apply-btn:hover {
+            background: #5a67d8;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .login-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+            color: #666;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #ddd, transparent);
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 20px;
+            position: relative;
+            font-size: 14px;
+        }
+
+        .widget-container {
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .widget-container.loaded {
+            border: none;
+        }
+
+        .widget-placeholder {
+            color: #999;
+            font-style: italic;
+        }
+
+        .messages {
+            margin-top: 20px;
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Override widget styles for integration */
+        .social-login-widget {
+            border: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Painel de Configuração -->
+        <div class="config-panel">
+            <h2>🎛️ Configuração Dinâmica</h2>
+            <p><small>Configure o Social Login Widget em tempo real (simula configuração via Adobe Commerce Admin)</small></p>
+
+            <form id="config-form">
+                <div class="form-group">
+                    <label for="api-endpoint">API Endpoint:</label>
+                    <input type="text" id="api-endpoint"
+                           value="https://612360-752yellowcrawdad-stage.adobeio-static.net/api/v1/social-login"
+                           placeholder="https://your-app-domain.adobe.io/api/v1/social-login">
+                </div>
+
+                <div class="form-group">
+                    <label>Providers Habilitados:</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="google" value="google" checked>
+                            <label for="google">🔵 Google</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="meta" value="meta" checked>
+                            <label for="meta">🔵 Meta/Facebook</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="theme">Tema:</label>
+                    <select id="theme">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="default">Default</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="button-size">Tamanho dos Botões:</label>
+                    <select id="button-size">
+                        <option value="small">Small</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="show-labels" checked>
+                        <label for="show-labels">Mostrar Labels dos Providers</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="redirect-url">URL de Redirecionamento (opcional):</label>
+                    <input type="text" id="redirect-url" placeholder="/customer/account/">
+                </div>
+
+                <button type="submit" class="apply-btn">🚀 Aplicar Configuração</button>
+            </form>
+
+            <div id="config-status"></div>
+        </div>
+
+        <!-- Painel de Login -->
+        <div class="login-panel">
+            <h1 class="login-title">Adobe Commerce Login</h1>
+
+            <div class="divider">
+                <span>Faça login com suas redes sociais</span>
+            </div>
+
+            <!-- Container do Widget -->
+            <div id="social-login-widget" class="widget-container">
+                <div class="widget-placeholder">
+                    Configure os providers ao lado e clique em "Aplicar Configuração"
+                </div>
+            </div>
+
+            <!-- Container para mensagens -->
+            <div id="messages" class="messages"></div>
+
+            <!-- Simulação de formulário tradicional -->
+            <div class="divider">
+                <span>ou use login tradicional</span>
+            </div>
+
+            <form onsubmit="handleTraditionalLogin(event)" style="margin-top: 20px;">
+                <div class="form-group">
+                    <input type="email" placeholder="Seu email" required
+                           style="margin-bottom: 10px;" id="email-field">
+                </div>
+                <div class="form-group">
+                    <input type="password" placeholder="Sua senha" required id="password-field">
+                </div>
+                <button type="submit" class="apply-btn">Entrar com Email</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Carregar Social Login Widget -->
+    <script src="https://612360-752yellowcrawdad-stage.adobeio-static.net/api/v1/web/social-login/SocialLoginWidget.js"></script>
+    <script>
+        let currentWidget = null;
+        let widgetScriptLoaded = false;
+
+        // Carregar script do widget
+        function loadWidgetScript(endpoint) {
+            return new Promise((resolve, reject) => {
+                if (widgetScriptLoaded && typeof SocialLoginWidget !== 'undefined') {
+                    resolve();
+                    return;
+                }
+
+                const script = document.createElement('script');
+                const widgetUrl = endpoint.replace('/social-login', '/SocialLoginWidget.js');
+                script.src = widgetUrl;
+
+                script.onload = () => {
+                    widgetScriptLoaded = true;
+                    resolve();
+                };
+
+                script.onerror = () => {
+                    reject(new Error('Falha ao carregar script do widget'));
+                };
+
+                document.head.appendChild(script);
+            });
+        }
+
+        // Aplicar configuração do widget
+        async function applyConfiguration() {
+            try {
+                showConfigStatus('🔄 Carregando configuração...', 'info');
+
+                // Coletar configuração do formulário
+                const config = getConfigFromForm();
+
+                if (config.providers.length === 0) {
+                    showConfigStatus('⚠️ Selecione pelo menos um provider', 'error');
+                    return;
+                }
+
+                // Carregar script do widget
+                await loadWidgetScript(config.apiEndpoint);
+
+                // Destruir widget anterior se existir
+                if (currentWidget) {
+                    const container = document.getElementById('social-login-widget');
+                    container.innerHTML = '';
+                }
+
+                // Criar novo widget
+                currentWidget = new SocialLoginWidget({
+                    containerId: 'social-login-widget',
+                    apiEndpoint: config.apiEndpoint,
+                    providers: config.providers,
+                    theme: config.theme,
+                    buttonSize: config.buttonSize,
+                    showLabels: config.showLabels,
+                    redirectUrl: config.redirectUrl || window.location.href,
+
+                    onSuccess: function(data) {
+                        console.log('Social login successful:', data);
+
+                        const providerName = data.socialProvider.charAt(0).toUpperCase() +
+                                           data.socialProvider.slice(1);
+
+                        showMessage(
+                            `✅ <strong>Login realizado com sucesso!</strong><br>
+                             Provider: ${providerName}<br>
+                             Email: ${data.user.email}<br>
+                             Ação: ${data.action === 'created' ? 'Conta criada' : 'Login realizado'}`,
+                            'success'
+                        );
+
+                        if (data.token) {
+                            sessionStorage.setItem('customer_token', data.token);
+                            showMessage('🔐 Token armazenado com segurança', 'info');
+                        }
+
+                        // Simular redirecionamento
+                        setTimeout(() => {
+                            if (config.redirectUrl) {
+                                showMessage(`🚀 Redirecionando para: ${config.redirectUrl}`, 'info');
+                            } else {
+                                showMessage('🚀 Redirecionando para conta do cliente...', 'info');
+                            }
+                        }, 2000);
+                    },
+
+                    onError: function(error) {
+                        console.error('Social login failed:', error);
+                        showMessage(`❌ <strong>Erro no login:</strong><br>${error.message}`, 'error');
+                    }
+                });
+
+                // Marcar container como carregado
+                document.getElementById('social-login-widget').classList.add('loaded');
+
+                showConfigStatus('✅ Configuração aplicada com sucesso!', 'success');
+
+            } catch (error) {
+                console.error('Configuration error:', error);
+                showConfigStatus(`❌ Erro na configuração: ${error.message}`, 'error');
+            }
+        }
+
+        // Coletar configuração do formulário
+        function getConfigFromForm() {
+            const providers = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                .filter(cb => cb.value && cb.value !== 'show-labels')
+                .map(cb => cb.value);
+
+            return {
+                apiEndpoint: document.getElementById('api-endpoint').value,
+                providers: providers,
+                theme: document.getElementById('theme').value,
+                buttonSize: document.getElementById('button-size').value,
+                showLabels: document.getElementById('show-labels').checked,
+                redirectUrl: document.getElementById('redirect-url').value
+            };
+        }
+
+        // Mostrar status da configuração
+        function showConfigStatus(message, type) {
+            const statusDiv = document.getElementById('config-status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.innerHTML = message;
+
+            if (type === 'success' || type === 'info') {
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                    statusDiv.className = '';
+                }, 3000);
+            }
+        }
+
+        // Mostrar mensagens no painel de login
+        function showMessage(text, type) {
+            const messagesContainer = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+            messageDiv.innerHTML = text;
+
+            // Limitar a 3 mensagens
+            while (messagesContainer.children.length >= 3) {
+                messagesContainer.removeChild(messagesContainer.firstChild);
+            }
+
+            messagesContainer.appendChild(messageDiv);
+
+            // Remover após 8 segundos
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.remove();
+                }
+            }, 8000);
+        }
+
+        // Handle form submission
+        document.getElementById('config-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            applyConfiguration();
+        });
+
+        // Simular login tradicional
+        function handleTraditionalLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email-field').value;
+            const password = document.getElementById('password-field').value;
+
+            showMessage('🔄 Processando login tradicional...', 'info');
+
+            setTimeout(() => {
+                if (email && password) {
+                    showMessage(`✅ <strong>Login tradicional realizado!</strong><br>Bem-vindo, ${email}`, 'success');
+                } else {
+                    showMessage('❌ Email e senha são obrigatórios', 'error');
+                }
+            }, 1000);
+        }
+
+        // Mostrar mensagem inicial
+        window.addEventListener('load', () => {
+            const token = sessionStorage.getItem('customer_token');
+            if (token) {
+                showMessage('ℹ️ Token de sessão encontrado - Você já está logado!', 'info');
+            } else {
+                showMessage('👋 Bem-vindo! Configure o Social Login ao lado para começar.', 'info');
+            }
+        });
+    </script>
+</body>
+</html>
