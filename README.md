@@ -126,20 +126,18 @@ After installation, you will need to configure the extension with your credentia
 
 Fill in your Adobe Commerce information:
 
-- **Adobe Commerce Base URL**: 
+This extension supports **both Adobe Commerce PaaS** (Cloud/on-premises) **and Adobe Commerce SaaS** (Adobe Commerce as a Cloud Service). **PaaS and SaaS use structurally different API endpoints, not just different credentials** — fill in **only one** of the two credential blocks below, matching your Commerce flavor. If both are filled in, the PaaS (OAuth) credentials take priority.
+
+### 3.3-PaaS: Obtain Commerce OAuth credentials (Adobe Commerce Cloud / on-premises)
+
+- **Adobe Commerce Base URL**:
   - Example: `https://your-ecommerce.adobecommerce.com`
   - This is the base URL of your Adobe Commerce (without `/graphql` or `/rest`)
+  - Requests go to `{baseUrl}/rest/{storeCode}/V1/...`
 
-- **Adobe Commerce API Token**: 
-  - See how to obtain it in [Step 3.3](#33-obtain-adobe-commerce-api-token)
-
-- **Adobe Commerce Store Code**: 
+- **Adobe Commerce Store Code**:
   - Usually `default`
   - If you use multiple stores, use the main store code
-
-### 3.3 Obtain Adobe Commerce API Token
-
-To obtain the Adobe Commerce API token:
 
 1. Access the Adobe Commerce administrative panel
 2. Go to **System** > **Extensions** > **Integrations**
@@ -148,13 +146,39 @@ To obtain the Adobe Commerce API token:
    - **Name**: Social Login Integration
    - **Email**: Your email
    - **Password**: Create a secure password
-5. In **API Resources**, select:
-   - ✅ **Customer**
-   - ✅ **Shopping Cart**
+5. In **API Resources**, select at least:
+   - ✅ **Customer** (the extension searches, creates, and generates session tokens for customers)
 6. Click **Save**
 7. After saving, click **Activate** in the Actions column
-8. On the next screen, **copy the Access Token**
-9. Paste this token in the **Adobe Commerce API Token** field in the extension settings
+8. On the next screen, copy **Consumer Key**, **Consumer Secret**, **Access Token**, and **Access Token Secret**
+9. Paste these into the matching fields in the extension settings:
+   - **Adobe Commerce base URL (PaaS)**
+   - **Adobe Commerce Store Code (PaaS)**
+   - **Commerce OAuth Consumer Key (PaaS)**
+   - **Commerce OAuth Consumer Secret (PaaS)**
+   - **Commerce OAuth Access Token (PaaS)**
+   - **Commerce OAuth Access Token Secret (PaaS)**
+
+### 3.3-SaaS: Obtain Commerce IMS credentials (Adobe Commerce as a Cloud Service)
+
+- **Commerce as a Cloud Service API URL**: the API Mesh gateway, e.g. `https://na1-sandbox.api.commerce.adobe.com`, **without** the instance id
+- **Instance ID**: your Commerce as a Cloud Service tenant id
+  - Requests go to `{apiUrl}/{instanceId}/V1/...` — no `/rest/{store}` segment, unlike PaaS. Do not reuse the PaaS base URL here, it's a different gateway with a different path structure
+  - Commerce as a Cloud Service also doesn't expose the customer/guest REST APIs available on PaaS — this extension uses the `generateCustomerToken` GraphQL mutation for SaaS customer token generation instead of the REST endpoint used on PaaS
+
+1. In the [Adobe Developer Console](https://developer.adobe.com/console), create (or reuse) a project/workspace and add an **OAuth Server-to-Server** credential — this creates a technical account with a `Client ID`, `Client Secret(s)`, `Technical Account ID`, `Technical Account Email`, and `Org ID`, all shown in the credential details
+2. In the **Commerce Admin**, the Technical Account Email must exist as an **Admin User** (*System > Permissions > All Users*), assigned a **Role** (*System > Permissions > User Roles*) with the **Customers** resource enabled — Commerce has no separate Integrations screen for IMS credentials like it does for OAuth 1.0a, so this is how it maps the token's identity to ACL permissions. Without this step, requests fail with `The consumer isn't authorized to access %resources.` even though the IMS token itself is valid
+3. Paste the values into the matching fields in the extension settings:
+   - **Commerce as a Cloud Service API URL (SaaS)**
+   - **Commerce as a Cloud Service Instance ID (SaaS)**
+   - **Commerce IMS Client ID (SaaS)**
+   - **Commerce IMS Client Secrets (SaaS)** — single value, or JSON array for secret rotation
+   - **Commerce IMS Technical Account ID (SaaS)**
+   - **Commerce IMS Technical Account Email (SaaS)**
+   - **Commerce IMS Organization ID (SaaS)**
+   - **Commerce IMS API Key (SaaS)** — optional, defaults to the Client ID
+   - **Commerce IMS Scopes (SaaS)** — JSON array, e.g. `["AdobeID","openid"]`
+   - **Commerce IMS Environment (SaaS)** — typically `prod`
 
 ### 3.4 Configure Google OAuth
 
@@ -181,6 +205,7 @@ Fill in the Meta/Facebook credentials you obtained in Step 1.2:
 - **CORS Origins**: Add your site domains, separated by commas
   - Example: `https://your-site.com,https://www.your-site.com`
   - Add all domains where the widget will be used
+  - Note: this value is accepted for documentation/future use, but isn't currently enforced by the extension's actions — Adobe I/O Runtime sets Access-Control-Allow-Origin automatically instead. Filling it in doesn't restrict which domains can call the actions today.
 
 ### 3.8 Save Settings
 
@@ -302,7 +327,7 @@ This guide shows how to integrate Social Login into AEM Edge blocks.
 
 **Possible causes and solutions**:
 - **Incorrect redirect URLs**: Verify that URLs in OAuth providers are correct
-- **CORS not configured**: Verify that your site domain is in CORS Origins
+- **Incorrect Widget Domain**: Verify the Widget Domain setting matches your app's actual installed URL
 - **Console error**: Open the browser console (F12) and check for errors
 
 **How to verify**:
@@ -314,82 +339,65 @@ This guide shows how to integrate Social Login into AEM Edge blocks.
 ### Problem: Customer doesn't appear in Adobe Commerce
 
 **Possible causes and solutions**:
-- **Incorrect Commerce URL**: Verify that `COMMERCE_CLOUD_BASE_URL` is correct
-- **Invalid API token**: Verify that the token has the correct permissions
-- **Incorrect Store Code**: Verify that the store code is correct
+- **Incorrect Commerce URL**: PaaS - verify the Adobe Commerce Base URL/Store Code; SaaS - verify the Commerce as a Cloud Service API URL/Instance ID (don't mix the two, they're different gateways with different path structures)
+- **Missing permissions**: Verify that your Integration (PaaS) or IMS Technical Account (SaaS) has the **Customers** ACL resource enabled
+- **`The consumer isn't authorized to access %resources.` error** (not SaaS-specific - can happen on PaaS too): SaaS - the Technical Account Email isn't set up as an Admin User with a Role that has **Customers** enabled (see [Step 3.3-SaaS](#33-saas-obtain-commerce-ims-credentials-adobe-commerce-as-a-cloud-service)); PaaS - the Integration's API Resource Access doesn't include **Customers**
+- **404 `Request does not match any route` when generating a token (SaaS)**: expected if the Commerce as a Cloud Service API URL/Instance ID aren't set - SaaS doesn't expose the REST customer-token endpoint used on PaaS, the extension uses a GraphQL mutation there instead
+- **`The account sign-in was incorrect or your account is disabled temporarily`**: Commerce's standard customer account lockout after repeated failed sign-in attempts, not a bug - unlock the customer in Commerce Admin (**Customers > All Customers**, mass action "Unlock") or wait for the lockout period to expire
 
 **How to verify**:
 1. Access the Adobe Commerce panel
-2. Go to **System** > **Extensions** > **Integrations**
-3. Verify that the Social Login integration is active
-4. Test the API token by making a manual request
+2. PaaS: go to **System** > **Extensions** > **Integrations** and verify the Social Login integration is active. SaaS: go to **System** > **Permissions** > **All Users** and verify the Technical Account Email exists with a Role that has the Customers permission
 
 ## 🔐 Security and Token System
 
 ### How the Security System Works
 
-The Social Login extension implements a robust security system that ensures your customers' data is protected and authentication is reliable. Here's what happens behind the scenes:
+The Social Login extension always issues a **real Adobe Commerce customer session token** — the same kind of token your storefront already knows how to use. There is no fabricated or backup token format; if a real Commerce token can't be issued, login fails with a clear error instead of silently falling back to something else.
 
 #### Complete Adobe Commerce Integration Process
 
-When a customer logs in with a social provider (Google or Facebook), the system goes through several security checks:
+When a customer logs in with a social provider (Google or Facebook), the system goes through several steps:
 
 **Step 1: Customer Search in Adobe Commerce**
 - The system searches for the customer in your Adobe Commerce database using their email
-- Uses official Adobe Commerce security authentication
+- Uses official Adobe Commerce authentication (OAuth 1.0a for PaaS, or IMS for SaaS — see Step 3.3)
 - If the customer doesn't exist, creates a new account automatically
-- If the customer exists, verifies their data
+- If the customer exists, proceeds with that account
 
-**Step 2: Token Generation via Adobe Commerce API**
-- The system attempts to generate an authentication token using Adobe Commerce's official API
-- Uses the customer's real data found in your Adobe Commerce system
-- Implements social login bypass (no password required)
-- Immediately validates the generated token
+**Step 2: Real Commerce Token Generation**
+- For a new customer, the extension generates a random password at account-creation time and stores it encrypted (AES-256) — this is what lets it request a real token later, since Adobe Commerce's token endpoint requires an actual username/password pair; there is no way to mint a customer token without one
+- The extension then exchanges that stored password for a genuine customer session token via Adobe Commerce's own token endpoint — REST `POST /V1/integration/customer/token` on PaaS, or the `generateCustomerToken` GraphQL mutation on SaaS (Commerce as a Cloud Service doesn't expose the REST customer/guest APIs available on PaaS)
+- If no stored credential is on file for a customer (for example, an account that already existed in Commerce before this extension was installed), login fails with a clear error rather than issuing a fabricated token
 
-**Step 3: Advanced Fallback System**
-If for any reason Adobe Commerce's API fails to generate a token, the system automatically activates a secure backup:
+### Security Layers Implemented
 
-- **JWT Fallback Token**: Creates a secure token using industry-standard encryption
-- **Multi-layer Security**: Implements multiple validation levels
-- **Customer Data Integrity**: Uses real customer data from Adobe Commerce
-- **Automatic Activation**: Activates only when Adobe Commerce fails
-- **High Availability**: Ensures login works even if Adobe Commerce has temporary issues
-
-### Security Levels Implemented
-
-**1. Adobe Commerce Native Authentication (Primary)**
-- Uses official Adobe Commerce security libraries
-- Certified authentication by Adobe
+**1. Adobe Commerce Native Authentication**
+- Uses official Adobe Commerce authentication libraries (OAuth 1.0a for PaaS, IMS for SaaS)
 - Secure customer search with specific filters
-- Token generation via official Adobe Commerce endpoints
-- Immediate token validation
+- Real token generation via Adobe Commerce's own token endpoint
+- No locally-generated substitute token of any kind
 
-**2. Secure JWT Fallback System (Backup)**
-- Activates automatically only when Adobe Commerce fails
-- Uses strong encryption (HS256 with SHA-256)
-- Unique token identifiers to prevent reuse
-- 24-hour automatic expiration
-- Real customer data from Adobe Commerce
+**2. Encrypted Credential Storage**
+- The password generated for each social-login customer is encrypted (AES-256-GCM) before being stored, and only ever used server-side to request a Commerce token
+- Refreshed automatically on every successful login so active accounts don't lose access
 
-**3. Multi-layer Validation**
-- Pre-generation: Customer data validation before token creation
-- Post-generation: Immediate verification of generated token
-- Usage: Complete validation when token is used
-- Real-time expiration checking
+**3. Multi-Layer Validation**
+- CSRF protection via a cryptographically random OAuth `state`, validated once and discarded
+- A one-time-use authentication token (5-minute expiration) links the OAuth callback to the token-generation step
+- An internally signed token (HMAC) proves a customer-creation request actually came from a completed OAuth flow, not a direct call
 
 ### What This Means for You
 
-**High Availability**: Your customers can always log in, even if there are temporary issues with Adobe Commerce.
+**Data Security**: Customer data and the session token both come directly from your Adobe Commerce instance — nothing is fabricated locally.
 
-**Data Security**: Customer data comes directly from your Adobe Commerce database, ensuring accuracy and security.
+**Predictable failure**: if Adobe Commerce can't issue a token (misconfigured permissions, unreachable instance, pre-existing customer with no stored credential), login fails visibly with an error, rather than silently degrading to a token your storefront might not fully trust.
 
-**Automatic Operation**: The system automatically chooses the best authentication method without any action needed from you.
-
-**Monitoring**: The system logs all authentication attempts for security monitoring (without storing sensitive data).
+**Monitoring**: The system logs authentication attempts for security monitoring, without logging tokens or passwords.
 
 ### Authentication Response Information
 
-When a customer successfully logs in, the system provides detailed information:
+When a customer successfully logs in, the system provides:
 
 ```json
 {
@@ -400,67 +408,45 @@ When a customer successfully logs in, the system provides detailed information:
     "firstName": "John",                // Name from Adobe Commerce
     "lastName": "Doe"                   // Last name from Adobe Commerce
   },
-  "token": "secure_token_here",
+  "token": "<real Adobe Commerce customer token>",
   "tokenInfo": {
-    "type": "Commerce API Token",       // or "JWT" if fallback was used
-    "source": "adobe_commerce_api"      // Shows the token source
+    "type": "Commerce API Token",
+    "source": "adobe_commerce_api"
   }
 }
 ```
 
-**Token Sources:**
-- `adobe_commerce_api`: Token generated by Adobe Commerce (preferred)
-- `jwt_fallback`: Secure backup token (used when Adobe Commerce fails)
-
 ### Production Security Configuration
 
-For maximum security in production, the extension automatically configures:
+For production, make sure to:
 
 **Adobe Commerce Integration:**
 - Secure connections (HTTPS only)
-- Official API authentication
-- Specific customer permissions
-- Token generation permissions
-
-**JWT Backup Security:**
-- Strong encryption keys (32+ characters)
-- Unique token identifiers
-- Automatic expiration (24 hours)
-- Real customer data validation
-
-**Monitoring and Alerts:**
-The extension monitors the authentication process and can alert you if:
-- Adobe Commerce API has frequent failures
-- High usage of the fallback system
-- Invalid token usage attempts
+- Official API authentication (OAuth 1.0a for PaaS, IMS for SaaS)
+- The **Customers** ACL resource enabled on the integration/technical account used
+- Keep the extension's internal secrets (Internal Authentication Secret, Customer Password Encryption Key) stable — rotating the Customer Password Encryption Key invalidates every stored customer credential, requiring affected customers to log in again to get a new one issued
 
 ### Best Practices for Security
 
 ✅ **Always use HTTPS** in production
 ✅ **Monitor authentication logs** regularly
-✅ **Keep Adobe Commerce API tokens secure**
-✅ **Configure CORS correctly** with only your domains
+✅ **Keep Adobe Commerce credentials secure**
 ✅ **Update OAuth credentials periodically**
+✅ **Use Commerce credentials with the minimum permissions required**
 
 ### Common Error Codes
 
-**404**: Customer not found in Adobe Commerce
-**500 + Commerce API error**: Issue with Adobe Commerce connection
-**500 + Token creation failed**: Both Adobe Commerce and backup system failed (rare)
-
-This dual security system ensures that your customers can always log in safely, while maintaining the highest security standards.
+**401**: Authentication failed — invalid/expired auth token, customer not found, missing Commerce permissions, or no stored credential for that customer
+**500**: Commerce configuration missing (base URL, credentials, or internal secrets not set)
 
 ### Problem: CORS Error
 
-**Possible causes and solutions**:
-- **Domain not configured**: Add your site domain to CORS Origins
-- **Incorrect protocol**: Make sure to use `https://` in domains
+CORS errors are unusual for this extension, since Adobe I/O Runtime sets the required header automatically for its web actions — the **CORS Origins** setting is currently accepted but not enforced by the extension's own code. If you do see one:
 
-**How to resolve**:
-1. Access the extension settings in Adobe Exchange
-2. In **CORS Origins**, add all domains where the widget will be used
-3. Use the format: `https://your-site.com,https://www.your-site.com`
-4. Save the settings
+**Possible causes and solutions**:
+- **Incorrect protocol**: Make sure to use `https://` in domains you reference from the widget
+- **Stale deployment**: Confirm the extension is up to date and reinstall/reconfigure if needed
+- **Browser extension or proxy interfering**: Test in a clean browser profile
 
 ### Problem: Login buttons don't appear
 

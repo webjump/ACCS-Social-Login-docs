@@ -1,113 +1,113 @@
-# Adobe Commerce Social Login - Exemplos de Integração
+# Adobe Commerce Social Login - Integration Examples
 
-Este diretório contém exemplos práticos para integrar o Social Login Widget em diferentes ambientes Adobe Commerce.
+This directory contains practical examples for integrating the Social Login Widget into different Adobe Commerce environments.
 
-## 📁 Estrutura dos Exemplos
+## 📁 Examples Structure
 
 ```
 examples/
-├── README.md                           # Este arquivo
+├── README.md                           # This file
 ├── aem-edge-integration/               # 🎯 AEM Edge Delivery Services
-│   ├── blocks/social-login/           # Block Franklin/Helix
-│   ├── configs-example.js             # Configurações
-│   ├── QUICK-START.md                 # Setup em 5 minutos
-│   └── scripts-requirements.md        # Dependências
-├── magento-module/                     # 🏪 Módulo Adobe Commerce completo
-│   ├── app/code/Webjump/SocialLogin/  # Código do módulo
-│   └── README.md                      # Guia de instalação
-└── integration-examples/               # 🔧 Integrações simples
-    ├── basic-integration.html         # HTML básico
-    ├── advanced-integration.html      # Configuração dinâmica
-    └── pwa-studio-example.jsx         # PWA Studio (referência)
+│   ├── blocks/social-login/           # Franklin/Helix Block
+│   ├── configs-example.js             # Configuration
+│   ├── QUICK-START.md                 # 5-minute setup
+│   └── scripts-requirements.md        # Dependencies
+├── magento-module/                     # 🏪 Complete Adobe Commerce module
+│   ├── app/code/Webjump/SocialLogin/  # Module code
+│   └── README.md                      # Installation guide
+└── integration-examples/               # 🔧 Simple integrations
+    ├── basic-integration.html         # Basic HTML
+    ├── advanced-integration.html      # Dynamic configuration
+    └── pwa-studio-example.jsx         # PWA Studio (reference)
 ```
 
-## 🎯 Qual Exemplo Usar?
+## 🎯 Which Example Should I Use?
 
-### **AEM Edge Delivery Services** ⭐ RECOMENDADO
+### **AEM Edge Delivery Services** ⭐ RECOMMENDED
 ```
 📁 aem-edge-integration/
 ```
-**Use se você tem:**
-- ✅ AEM Edge como Storefront
-- ✅ Adobe Commerce como backend
+**Use this if you have:**
+- ✅ AEM Edge as Storefront
+- ✅ Adobe Commerce as backend
 - ✅ Franklin/Helix blocks
 - ✅ aem-boilerplate-commerce base
 
-**Vantagens:**
-- ⚡ Performance otimizada
-- 🎨 Design system nativo
+**Advantages:**
+- ⚡ Optimized performance
+- 🎨 Native design system
 - 📱 Mobile-first
-- 🚀 Deploy automático
+- 🚀 Automatic deploy
 
 ---
 
-### **Módulo Adobe Commerce Completo**
+### **Complete Adobe Commerce Module**
 ```
 📁 magento-module/
 ```
-**Use se você tem:**
-- ✅ Adobe Commerce tradicional (Luma/Blank theme)
-- ✅ Acesso ao admin backend
-- ✅ Capacidade de instalar módulos
-- ✅ Controle total sobre configurações
+**Use this if you have:**
+- ✅ Traditional Adobe Commerce (Luma/Blank theme)
+- ✅ Access to the admin backend
+- ✅ Ability to install modules
+- ✅ Full control over configuration
 
-**Vantagens:**
-- 🎛️ Configuração via admin panel
-- 🔧 Escolha de providers via backoffice
-- 🎨 Personalização de tema/posição
-- 📊 Configurações avançadas
+**Advantages:**
+- 🎛️ Configuration via admin panel
+- 🔧 Provider selection via backoffice
+- 🎨 Theme/position customization
+- 📊 Advanced configuration
 
 ---
 
-### **Integrações Simples**
+### **Simple Integrations**
 ```
 📁 integration-examples/
 ```
-**Use se você tem:**
-- ✅ Qualquer frontend (HTML/JS/React/Vue)
-- ✅ Acesso limitado ao backend
-- ✅ Necessidade de implementação rápida
-- ✅ Flexibilidade total de customização
+**Use this if you have:**
+- ✅ Any frontend (HTML/JS/React/Vue)
+- ✅ Limited backend access
+- ✅ Need for a quick implementation
+- ✅ Full customization flexibility
 
-**Vantagens:**
-- 🚀 Setup em minutos
+**Advantages:**
+- 🚀 Setup in minutes
 - 🛠️ Plug-and-play
-- 💡 Exemplos educativos
-- 🔄 Facilmente adaptável
+- 💡 Educational examples
+- 🔄 Easily adaptable
 
-## 🚀 Quick Start por Plataforma
+## 🚀 Quick Start by Platform
 
-### **AEM Edge** (5 minutos)
+### **AEM Edge** (5 minutes)
 ```bash
-# 1. Copiar arquivos
+# 1. Copy files
 cp aem-edge-integration/blocks/social-login/* your-site/blocks/social-login/
 
-# 2. Configurar
-# Adicionar configs ao scripts/configs.js
+# 2. Configure
+# Add configs to scripts/configs.js
 
 # 3. Deploy
 hlx deploy && hlx publish
 ```
 
-### **Adobe Commerce Module** (15 minutos)
+### **Adobe Commerce Module** (15 minutes)
 ```bash
-# 1. Copiar módulo
+# 1. Copy module
 cp -r magento-module/app/code/Webjump/SocialLogin app/code/Webjump/SocialLogin
 
-# 2. Instalar
+# 2. Install
 php bin/magento module:enable Webjump_SocialLogin
 php bin/magento setup:upgrade
 
-# 3. Configurar via admin
+# 3. Configure via admin
 # Stores > Configuration > Webjump > Social Login
 ```
 
-### **HTML Simples** (2 minutos)
+### **Simple HTML** (2 minutes)
 ```html
-<!-- 1. Copiar HTML -->
-<!-- Ver basic-integration.html -->
+<!-- 1. Copy HTML -->
+<!-- See basic-integration.html -->
 
-<!-- 2. Configurar API endpoint -->
+<!-- 2. Configure API endpoint -->
 <script>
 new SocialLoginWidget({
     apiEndpoint: 'https://your-domain.adobe.io/api/v1/social-login'
@@ -115,19 +115,19 @@ new SocialLoginWidget({
 </script>
 ```
 
-## 🔧 Configuração Comum
+## 🔧 Common Configuration
 
-Todos os exemplos requerem:
+All examples require:
 
 ### **1. Adobe App Builder Social Login**
 ```bash
-# Deploy das ações OAuth
+# Deploy the OAuth actions
 aio app deploy
 ```
 
 ### **2. Environment Variables**
 ```bash
-# Configurar credenciais OAuth
+# Configure OAuth credentials
 GOOGLE_CLIENT_ID=your-google-client-id
 META_APP_ID=your-meta-app-id
 LINKEDIN_CLIENT_ID=your-linkedin-client-id
@@ -135,40 +135,40 @@ LINKEDIN_CLIENT_ID=your-linkedin-client-id
 ```
 
 ### **3. Adobe Commerce GraphQL**
-- ✅ GraphQL endpoint habilitado
-- ✅ Customer tokens funcionando
-- ✅ CORS configurado corretamente
+- ✅ GraphQL endpoint enabled
+- ✅ Customer tokens working
+- ✅ CORS configured correctly
 
-## 📊 Comparação de Implementações
+## 📊 Implementation Comparison
 
-| Característica | AEM Edge | Módulo Commerce | HTML Simples |
+| Feature | AEM Edge | Commerce Module | Simple HTML |
 |---|---|---|---|
-| **Tempo Setup** | ⚡ 5min | 🕐 15min | ⚡ 2min |
-| **Configuração Admin** | ❌ Via código | ✅ Via painel | ❌ Via código |
+| **Setup Time** | ⚡ 5min | 🕐 15min | ⚡ 2min |
+| **Admin Configuration** | ❌ Via code | ✅ Via panel | ❌ Via code |
 | **Performance** | ⚡⚡⚡ | ⚡⚡ | ⚡⚡⚡ |
-| **Flexibilidade** | ⚡⚡ | ⚡ | ⚡⚡⚡ |
-| **Manutenção** | ⚡⚡⚡ | ⚡⚡ | ⚡⚡ |
-| **Recursos** | ⚡⚡ | ⚡⚡⚡ | ⚡ |
+| **Flexibility** | ⚡⚡ | ⚡ | ⚡⚡⚡ |
+| **Maintenance** | ⚡⚡⚡ | ⚡⚡ | ⚡⚡ |
+| **Features** | ⚡⚡ | ⚡⚡⚡ | ⚡ |
 
-## 🆘 Suporte
+## 🆘 Support
 
-### **Para Problemas Específicos:**
-- **AEM Edge**: Consulte `aem-edge-integration/scripts-requirements.md`
-- **Módulo Adobe Commerce**: Consulte `magento-module/README.md`
-- **Integrações Simples**: Consulte comentários nos arquivos HTML
+### **For Specific Issues:**
+- **AEM Edge**: See `aem-edge-integration/scripts-requirements.md`
+- **Adobe Commerce Module**: See `magento-module/README.md`
+- **Simple Integrations**: See the comments in the HTML files
 
-### **Para Problemas Gerais:**
-- Verificar configuração do Adobe App Builder
-- Confirmar credenciais OAuth dos providers
-- Testar endpoints GraphQL do Adobe Commerce
-- Verificar CORS e políticas de segurança
+### **For General Issues:**
+- Verify the Adobe App Builder configuration
+- Confirm the OAuth provider credentials
+- Test the Adobe Commerce GraphQL endpoints
+- Check CORS and security policies
 
 ### **Debug:**
 ```javascript
-// Ativar modo debug em qualquer implementação
+// Enable debug mode in any implementation
 'social-login-debug': 'true'
 ```
 
 ---
 
-**Escolha o exemplo que melhor se adapta ao seu ambiente e siga o guia específico! 🚀**
+**Choose the example that best fits your environment and follow the specific guide! 🚀**
