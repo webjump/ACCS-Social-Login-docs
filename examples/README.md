@@ -7,11 +7,6 @@ This directory contains practical examples for integrating the Social Login Widg
 ```
 examples/
 ├── README.md                           # This file
-├── aem-edge-integration/               # 🎯 AEM Edge Delivery Services
-│   ├── blocks/social-login/           # Franklin/Helix Block
-│   ├── configs-example.js             # Configuration
-│   ├── QUICK-START.md                 # 5-minute setup
-│   └── scripts-requirements.md        # Dependencies
 ├── magento-module/                     # 🏪 Complete Adobe Commerce module
 │   ├── app/code/Webjump/SocialLogin/  # Module code
 │   └── README.md                      # Installation guide
@@ -23,25 +18,7 @@ examples/
 
 ## 🎯 Which Example Should I Use?
 
-### **AEM Edge Delivery Services** ⭐ RECOMMENDED
-```
-📁 aem-edge-integration/
-```
-**Use this if you have:**
-- ✅ AEM Edge as Storefront
-- ✅ Adobe Commerce as backend
-- ✅ Franklin/Helix blocks
-- ✅ aem-boilerplate-commerce base
-
-**Advantages:**
-- ⚡ Optimized performance
-- 🎨 Native design system
-- 📱 Mobile-first
-- 🚀 Automatic deploy
-
----
-
-### **Complete Adobe Commerce Module**
+### **Complete Adobe Commerce Module** ⭐ RECOMMENDED
 ```
 📁 magento-module/
 ```
@@ -76,18 +53,6 @@ examples/
 - 🔄 Easily adaptable
 
 ## 🚀 Quick Start by Platform
-
-### **AEM Edge** (5 minutes)
-```bash
-# 1. Copy files
-cp aem-edge-integration/blocks/social-login/* your-site/blocks/social-login/
-
-# 2. Configure
-# Add configs to scripts/configs.js
-
-# 3. Deploy
-hlx deploy && hlx publish
-```
 
 ### **Adobe Commerce Module** (15 minutes)
 ```bash
@@ -129,9 +94,9 @@ aio app deploy
 ```bash
 # Configure OAuth credentials
 GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 META_APP_ID=your-meta-app-id
-LINKEDIN_CLIENT_ID=your-linkedin-client-id
-# etc...
+META_APP_SECRET=your-meta-app-secret
 ```
 
 ### **3. Adobe Commerce GraphQL**
@@ -141,19 +106,17 @@ LINKEDIN_CLIENT_ID=your-linkedin-client-id
 
 ## 📊 Implementation Comparison
 
-| Feature | AEM Edge | Commerce Module | Simple HTML |
-|---|---|---|---|
-| **Setup Time** | ⚡ 5min | 🕐 15min | ⚡ 2min |
-| **Admin Configuration** | ❌ Via code | ✅ Via panel | ❌ Via code |
-| **Performance** | ⚡⚡⚡ | ⚡⚡ | ⚡⚡⚡ |
-| **Flexibility** | ⚡⚡ | ⚡ | ⚡⚡⚡ |
-| **Maintenance** | ⚡⚡⚡ | ⚡⚡ | ⚡⚡ |
-| **Features** | ⚡⚡ | ⚡⚡⚡ | ⚡ |
+| Feature | Commerce Module | Simple HTML |
+|---|---|---|
+| **Setup Time** | 🕐 15min | ⚡ 2min |
+| **Admin Configuration** | ✅ Via panel | ❌ Via code |
+| **Flexibility** | ⚡ | ⚡⚡⚡ |
+| **Maintenance** | ⚡⚡ | ⚡⚡ |
+| **Features** | ⚡⚡⚡ | ⚡ |
 
 ## 🆘 Support
 
 ### **For Specific Issues:**
-- **AEM Edge**: See `aem-edge-integration/scripts-requirements.md`
 - **Adobe Commerce Module**: See `magento-module/README.md`
 - **Simple Integrations**: See the comments in the HTML files
 
