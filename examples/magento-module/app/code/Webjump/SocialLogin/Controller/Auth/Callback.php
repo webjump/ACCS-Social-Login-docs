@@ -14,13 +14,17 @@ use Magento\Framework\Controller\Result\Json;
 use Magento\Framework\Controller\Result\Redirect;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Message\ManagerInterface;
-use Webjump\SocialLogin\Api\JwtAuthenticationInterface;
+use Webjump\SocialLogin\Api\CustomerTokenAuthenticationInterface;
 use Webjump\SocialLogin\Helper\Data;
 use Psr\Log\LoggerInterface;
 
 /**
- * Class Callback
- * @package Webjump\SocialLogin\Controller\Auth
+ * Receives the Adobe Commerce customer token produced by the Social Login App
+ * Builder application and opens the matching customer session.
+ *
+ * The token is validated against Commerce's own token storage, so this endpoint
+ * cannot be used to log in as an arbitrary customer. It deliberately accepts
+ * nothing but the token - no email, no profile data.
  */
 class Callback implements HttpGetActionInterface, HttpPostActionInterface
 {
@@ -35,9 +39,9 @@ class Callback implements HttpGetActionInterface, HttpPostActionInterface
     private $resultFactory;
 
     /**
-     * @var JwtAuthenticationInterface
+     * @var CustomerTokenAuthenticationInterface
      */
-    private $jwtAuthentication;
+    private $tokenAuthentication;
 
     /**
      * @var Data
@@ -57,7 +61,7 @@ class Callback implements HttpGetActionInterface, HttpPostActionInterface
     /**
      * @param RequestInterface $request
      * @param ResultFactory $resultFactory
-     * @param JwtAuthenticationInterface $jwtAuthentication
+     * @param CustomerTokenAuthenticationInterface $tokenAuthentication
      * @param Data $helper
      * @param ManagerInterface $messageManager
      * @param LoggerInterface $logger
@@ -65,67 +69,57 @@ class Callback implements HttpGetActionInterface, HttpPostActionInterface
     public function __construct(
         RequestInterface $request,
         ResultFactory $resultFactory,
-        JwtAuthenticationInterface $jwtAuthentication,
+        CustomerTokenAuthenticationInterface $tokenAuthentication,
         Data $helper,
         ManagerInterface $messageManager,
         LoggerInterface $logger
     ) {
         $this->request = $request;
         $this->resultFactory = $resultFactory;
-        $this->jwtAuthentication = $jwtAuthentication;
+        $this->tokenAuthentication = $tokenAuthentication;
         $this->helper = $helper;
         $this->messageManager = $messageManager;
         $this->logger = $logger;
     }
 
     /**
-     * Execute JWT authentication and create Magento session
+     * Validate the Commerce customer token and open the customer session.
      *
      * @return Json|Redirect
      */
     public function execute()
     {
         try {
-            // Log the request method and content type
-            $this->logger->info('Callback request method: ' . $this->request->getMethod());
-            $this->logger->info('Callback content type: ' . $this->request->getHeader('Content-Type'));
+            $jsonData = [];
 
-            // Try to get token from different sources
+            // Accept the token from a query/form parameter or from a JSON body,
+            // so the endpoint works for both the AJAX and redirect integrations.
             $token = $this->request->getParam('token');
-
-            // If not found in params, try to get from POST body (JSON)
-            if (!$token && $this->request->getMethod() === 'POST') {
-                $postData = $this->request->getContent();
-                $this->logger->info('Raw POST data: ' . $postData);
-
-                if ($postData) {
-                    $jsonData = json_decode($postData, true);
-                    if ($jsonData && isset($jsonData['token'])) {
-                        $token = $jsonData['token'];
-                        $this->logger->info('Token extracted from JSON body');
-                    }
-                }
-            }
-
             $returnUrl = $this->request->getParam('return_url');
 
-            // Also try return_url from JSON if not found in params
-            if (!$returnUrl && isset($jsonData['return_url'])) {
-                $returnUrl = $jsonData['return_url'];
-            }
+            if ((!$token || !$returnUrl) && $this->request->getMethod() === 'POST') {
+                // Never log the raw body: it carries the customer token.
+                $postData = $this->request->getContent();
+                if ($postData) {
+                    $decoded = json_decode($postData, true);
+                    if (is_array($decoded)) {
+                        $jsonData = $decoded;
+                    }
+                }
 
-            $this->logger->info('Extracted token: ' . ($token ? 'YES' : 'NO'));
-            $this->logger->info('Extracted return_url: ' . ($returnUrl ?: 'NONE'));
+                $token = $token ?: ($jsonData['token'] ?? null);
+                $returnUrl = $returnUrl ?: ($jsonData['return_url'] ?? null);
+            }
 
             if (!$token) {
-                throw new LocalizedException(__('JWT token is required'));
+                throw new LocalizedException(__('An authentication token is required.'));
             }
 
-            // Authenticate using JWT and create customer session
-            $customer = $this->jwtAuthentication->authenticateByJwt($token);
+            // Validated against Commerce's token storage - see
+            // CustomerTokenAuthentication for why nothing else is trusted here.
+            $customer = $this->tokenAuthentication->authenticateByToken((string)$token);
 
-            // Log successful authentication
-            $this->logger->info('JWT authentication successful for customer: ' . $customer->getEmail());
+            $this->logger->info('Social Login: session opened for customer ' . $customer->getId());
 
             if ($this->request->isAjax()) {
                 /** @var Json $result */
@@ -133,7 +127,6 @@ class Callback implements HttpGetActionInterface, HttpPostActionInterface
                 return $result->setData([
                     'success' => true,
                     'customer_id' => $customer->getId(),
-                    'session_id' => session_id(),
                     'redirect_url' => $returnUrl ?: $this->helper->getRedirectUrl()
                 ]);
             }
@@ -147,7 +140,7 @@ class Callback implements HttpGetActionInterface, HttpPostActionInterface
             return $result->setUrl($redirectUrl);
 
         } catch (LocalizedException $e) {
-            $this->logger->error('Social Login JWT Authentication Error: ' . $e->getMessage());
+            $this->logger->error('Social Login authentication error: ' . $e->getMessage());
 
             if ($this->request->isAjax()) {
                 /** @var Json $result */

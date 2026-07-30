@@ -25,8 +25,12 @@ This complete module for Adobe Commerce lets you configure and manage the Social
 ### ⚙️ Advanced Configuration
 - Custom redirect URL
 - Debug mode for development
-- Automatic customer creation
 - Smart caching for performance
+
+### 🔐 How the session is opened
+- The App Builder application hands the storefront a **real Adobe Commerce customer token**
+- The module validates that token against Commerce's own token storage and opens the session for the customer it belongs to
+- It accepts nothing else — no email, no profile data, no signed payload from the browser
 
 ## 📁 Module Structure
 
@@ -43,6 +47,12 @@ app/code/Webjump/SocialLogin/
 │   └── Data.php                       # Main helper with configuration getters
 ├── Block/
 │   └── Login.php                      # Block for frontend rendering
+├── Api/
+│   └── CustomerTokenAuthenticationInterface.php  # Authentication contract
+├── Controller/Auth/
+│   └── Callback.php                   # Receives the Commerce customer token
+├── Model/
+│   └── CustomerTokenAuthentication.php # Token validation + session creation
 ├── Model/Config/Source/
 │   ├── Theme.php                      # Theme options
 │   ├── ButtonSize.php                 # Size options
@@ -50,8 +60,10 @@ app/code/Webjump/SocialLogin/
 └── view/frontend/
     ├── layout/
     │   └── customer_account_login.xml # Login page layout
-    └── templates/
-        └── login.phtml                # Main template
+    ├── templates/
+    │   └── login.phtml                # Main template
+    └── web/js/
+        └── social-login-auth.js       # Posts the token to the controller
 ```
 
 ## 📦 Installation
@@ -105,7 +117,10 @@ Check the OAuth providers you want to enable:
 ### 5. Advanced Settings
 - **Redirect URL**: Where to send the customer after login (default: customer account)
 - **Debug Mode**: Enable only during development
-- **Automatic Creation**: Create a customer automatically on first login
+
+Creating the customer account is the App Builder application's job, not the
+module's — there is no "create customer" setting here on purpose. See
+[Authentication](#-authentication) below.
 
 ## 🆕 What's New in This Version
 
@@ -119,6 +134,46 @@ Check the OAuth providers you want to enable:
 - Full support for all 8 OAuth providers
 - Granular selection in the admin panel
 - Configuration optimized for production
+
+## 🔐 Authentication
+
+### The flow
+
+1. The shopper completes the OAuth flow in the widget.
+2. The App Builder application finds or creates the customer in Adobe Commerce and
+   returns a **genuine Commerce customer access token** — the same kind
+   `POST /V1/integration/customer/token` issues.
+3. `social-login-auth.js` posts that token to `sociallogin/auth/callback`.
+4. `CustomerTokenAuthentication` looks the token up in Commerce's token storage
+   (the same source `Magento\Webapi\Model\Authorization\TokenUserContext` uses for
+   REST requests), checks that it is not revoked or expired and that it belongs to
+   a **customer** rather than an admin or integration, and opens the session for
+   that customer id.
+
+### Why it is built this way
+
+The token is the only thing that establishes identity, and it can't be forged: a
+made-up token has no matching row in Commerce, so it is refused. The customer id
+comes from that row — never from the request.
+
+This is the reason the module deliberately does **not**:
+
+- accept an email address, profile payload, or any self-describing token from the
+  browser — that would move the trust decision to whoever calls the endpoint;
+- create or update customer accounts — the App Builder application already did
+  that, with the provider-verified identity, before any token existed;
+- attempt client-side validation of the token — a check in the browser is
+  advisory at best, and implies a guarantee it can't make.
+
+If you adapt this module, keep those three properties. An endpoint that logs a
+shopper in based on data the browser supplied is an account takeover, regardless
+of how the data is encoded.
+
+### Session handling
+
+The session id is regenerated **before** the customer is logged in, so a session
+id planted in the browser beforehand cannot survive into the authenticated
+session (session fixation).
 
 ## 🔧 Customization
 

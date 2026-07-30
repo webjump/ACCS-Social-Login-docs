@@ -6,22 +6,33 @@
 
 namespace Webjump\SocialLogin\Model;
 
+use Magento\Authorization\Model\UserContextInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterface;
-use Magento\Customer\Api\Data\CustomerInterfaceFactory;
 use Magento\Customer\Model\Session;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Store\Model\StoreManagerInterface;
-use Webjump\SocialLogin\Api\JwtAuthenticationInterface;
-use Webjump\SocialLogin\Helper\Data;
+use Magento\Integration\Helper\Oauth\Data as OauthHelper;
+use Magento\Integration\Model\Oauth\Token;
+use Magento\Integration\Model\Oauth\TokenFactory;
 use Psr\Log\LoggerInterface;
+use Webjump\SocialLogin\Api\CustomerTokenAuthenticationInterface;
 
 /**
- * Class JwtAuthentication
- * @package Webjump\SocialLogin\Model
+ * Logs a customer in from the Adobe Commerce customer token issued by the Social
+ * Login App Builder application.
+ *
+ * Security model: the token is a real Commerce customer access token, so it is
+ * looked up in Commerce's own token storage (the same source
+ * `Magento\Webapi\Model\Authorization\TokenUserContext` uses for REST requests)
+ * and the customer id comes from that record. A forged or guessed token has no
+ * matching row and is refused - the browser never gets to state who it is.
+ *
+ * This is why the module must NOT accept an identity payload (an email, a signed
+ * blob, a JWT) from the client: doing so would move the trust decision to
+ * whoever is calling the endpoint.
  */
-class JwtAuthentication implements JwtAuthenticationInterface
+class CustomerTokenAuthentication implements CustomerTokenAuthenticationInterface
 {
     /**
      * @var CustomerRepositoryInterface
@@ -29,24 +40,19 @@ class JwtAuthentication implements JwtAuthenticationInterface
     private $customerRepository;
 
     /**
-     * @var CustomerInterfaceFactory
-     */
-    private $customerFactory;
-
-    /**
      * @var Session
      */
     private $customerSession;
 
     /**
-     * @var StoreManagerInterface
+     * @var TokenFactory
      */
-    private $storeManager;
+    private $tokenFactory;
 
     /**
-     * @var Data
+     * @var OauthHelper
      */
-    private $helper;
+    private $oauthHelper;
 
     /**
      * @var LoggerInterface
@@ -55,47 +61,40 @@ class JwtAuthentication implements JwtAuthenticationInterface
 
     /**
      * @param CustomerRepositoryInterface $customerRepository
-     * @param CustomerInterfaceFactory $customerFactory
      * @param Session $customerSession
-     * @param StoreManagerInterface $storeManager
-     * @param Data $helper
+     * @param TokenFactory $tokenFactory
+     * @param OauthHelper $oauthHelper
      * @param LoggerInterface $logger
      */
     public function __construct(
         CustomerRepositoryInterface $customerRepository,
-        CustomerInterfaceFactory $customerFactory,
         Session $customerSession,
-        StoreManagerInterface $storeManager,
-        Data $helper,
+        TokenFactory $tokenFactory,
+        OauthHelper $oauthHelper,
         LoggerInterface $logger
     ) {
         $this->customerRepository = $customerRepository;
-        $this->customerFactory = $customerFactory;
         $this->customerSession = $customerSession;
-        $this->storeManager = $storeManager;
-        $this->helper = $helper;
+        $this->tokenFactory = $tokenFactory;
+        $this->oauthHelper = $oauthHelper;
         $this->logger = $logger;
     }
 
     /**
      * @inheritDoc
      */
-    public function authenticateByJwt(string $token): CustomerInterface
+    public function authenticateByToken(string $token): CustomerInterface
     {
-        // Validate JWT token
-        $payload = $this->validateJwtToken($token);
-        if (!$payload) {
-            throw new LocalizedException(__('Invalid JWT token'));
+        $customerId = $this->resolveCustomerId($token);
+
+        try {
+            $customer = $this->customerRepository->getById($customerId);
+        } catch (NoSuchEntityException $e) {
+            // The token references a customer that no longer exists.
+            throw new LocalizedException(__('Invalid authentication token.'));
         }
 
-        // Extract customer data from JWT
-        $customerData = $this->extractCustomerDataFromJwt($token);
-
-        // Find or create customer
-        $customer = $this->findOrCreateCustomer($customerData);
-
-        // Create customer session with fallback retry mechanism
-        $this->createCustomerSessionWithRetry($customer);
+        $this->createCustomerSession($customer);
 
         return $customer;
     }
@@ -103,230 +102,85 @@ class JwtAuthentication implements JwtAuthenticationInterface
     /**
      * @inheritDoc
      */
-    public function validateJwtToken(string $token)
+    public function resolveCustomerId(string $token): int
     {
-        try {
-            // Split JWT token into parts
-            $parts = explode('.', $token);
-            if (count($parts) !== 3) {
-                return false;
-            }
+        $token = trim($token);
+        if ($token === '') {
+            throw new LocalizedException(__('Invalid authentication token.'));
+        }
 
-            // Decode header and payload
-            $header = json_decode(base64_decode($parts[0]), true);
-            $payload = json_decode(base64_decode($parts[1]), true);
+        /** @var Token $tokenModel */
+        $tokenModel = $this->tokenFactory->create();
+        $tokenModel->loadByToken($token);
 
-            if (!$header || !$payload) {
-                return false;
-            }
+        // Every failure below is reported with the same generic message on
+        // purpose - telling a caller *why* a token was refused helps them probe.
+        if (!$tokenModel->getId() || $tokenModel->getRevoked()) {
+            $this->logger->warning('Social Login: unknown or revoked customer token presented');
+            throw new LocalizedException(__('Invalid authentication token.'));
+        }
 
-            // Check token expiration
-            if (isset($payload['exp']) && $payload['exp'] < time()) {
-                $this->logger->warning('JWT token expired');
-                return false;
-            }
+        if ((int)$tokenModel->getUserType() !== UserContextInterface::USER_TYPE_CUSTOMER) {
+            // An admin or integration token must never open a customer session.
+            $this->logger->warning('Social Login: token presented is not a customer token');
+            throw new LocalizedException(__('Invalid authentication token.'));
+        }
 
-            // Here you should add your JWT signature verification logic
-            // For now, we'll validate basic structure and expiration
+        $customerId = (int)$tokenModel->getCustomerId();
+        if ($customerId <= 0) {
+            $this->logger->warning('Social Login: customer token carries no customer id');
+            throw new LocalizedException(__('Invalid authentication token.'));
+        }
 
-            return $payload;
+        if ($this->isExpired($tokenModel)) {
+            $this->logger->warning('Social Login: expired customer token presented');
+            throw new LocalizedException(__('Invalid authentication token.'));
+        }
 
-        } catch (\Exception $e) {
-            $this->logger->error('JWT validation error: ' . $e->getMessage());
+        return $customerId;
+    }
+
+    /**
+     * Whether the token is past the customer token lifetime configured in
+     * Stores > Configuration > Services > OAuth > Access Token Expiration.
+     *
+     * @param Token $tokenModel
+     * @return bool
+     */
+    private function isExpired(Token $tokenModel): bool
+    {
+        $lifetimeHours = (int)$this->oauthHelper->getCustomerTokenLifetime();
+        if ($lifetimeHours <= 0) {
+            // 0 means "never expires" in Commerce's configuration.
             return false;
         }
+
+        $createdAt = strtotime((string)$tokenModel->getCreatedAt());
+        if (!$createdAt) {
+            // No usable creation date - treat as expired rather than trusting it.
+            return true;
+        }
+
+        return ($createdAt + ($lifetimeHours * 3600)) < time();
     }
 
     /**
-     * @inheritDoc
-     */
-    public function extractCustomerDataFromJwt(string $token): array
-    {
-        $payload = $this->validateJwtToken($token);
-        if (!$payload) {
-            throw new LocalizedException(__('Cannot extract data from invalid JWT token'));
-        }
-
-        // Extract customer information from JWT payload
-        $customerData = [
-            'email' => $payload['email'] ?? null,
-            'firstname' => $payload['given_name'] ?? $payload['first_name'] ?? $payload['name'] ?? 'Social',
-            'lastname' => $payload['family_name'] ?? $payload['last_name'] ?? 'User',
-            'external_id' => $payload['sub'] ?? $payload['id'] ?? null,
-            'provider' => $payload['provider'] ?? 'social',
-            'picture' => $payload['picture'] ?? null,
-        ];
-
-        if (empty($customerData['email'])) {
-            throw new LocalizedException(__('Email is required in JWT token'));
-        }
-
-        return $customerData;
-    }
-
-    /**
-     * Find existing customer or create new one
-     *
-     * @param array $customerData
-     * @return CustomerInterface
-     * @throws LocalizedException
-     */
-    private function findOrCreateCustomer(array $customerData): CustomerInterface
-    {
-        $websiteId = $this->storeManager->getWebsite()->getId();
-
-        try {
-            // Try to find existing customer by email
-            $customer = $this->customerRepository->get($customerData['email'], $websiteId);
-
-            // Update customer data if needed
-            if ($customer->getFirstname() !== $customerData['firstname'] ||
-                $customer->getLastname() !== $customerData['lastname']) {
-                $customer->setFirstname($customerData['firstname']);
-                $customer->setLastname($customerData['lastname']);
-                $customer = $this->customerRepository->save($customer);
-            }
-
-            return $customer;
-
-        } catch (NoSuchEntityException $e) {
-            // Customer doesn't exist, create new one if auto-create is enabled
-            if (!$this->helper->getAutoCreateCustomer()) {
-                throw new LocalizedException(__('Customer account not found. Please register first.'));
-            }
-
-            return $this->createNewCustomer($customerData, $websiteId);
-        }
-    }
-
-    /**
-     * Create new customer account
-     *
-     * @param array $customerData
-     * @param int $websiteId
-     * @return CustomerInterface
-     * @throws LocalizedException
-     */
-    private function createNewCustomer(array $customerData, int $websiteId): CustomerInterface
-    {
-        try {
-            $customer = $this->customerFactory->create();
-            $customer->setEmail($customerData['email']);
-            $customer->setFirstname($customerData['firstname']);
-            $customer->setLastname($customerData['lastname']);
-            $customer->setWebsiteId($websiteId);
-            $customer->setStoreId($this->storeManager->getStore()->getId());
-
-            // Set custom attributes if needed
-            if (!empty($customerData['external_id'])) {
-                $customer->setCustomAttribute('social_login_id', $customerData['external_id']);
-            }
-            if (!empty($customerData['provider'])) {
-                $customer->setCustomAttribute('social_login_provider', $customerData['provider']);
-            }
-
-            return $this->customerRepository->save($customer);
-
-        } catch (\Exception $e) {
-            $this->logger->error('Error creating customer: ' . $e->getMessage());
-            throw new LocalizedException(__('Unable to create customer account'));
-        }
-    }
-
-    /**
-     * Create customer session in Magento
+     * Open the Magento customer session.
      *
      * @param CustomerInterface $customer
      * @throws LocalizedException
      */
     private function createCustomerSession(CustomerInterface $customer): void
     {
-        try {
-            // Start PHP session if not already started
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-                $this->logger->info('PHP session started for customer: ' . $customer->getEmail());
-            }
+        // regenerateId() before logging in prevents session fixation: a session
+        // id an attacker planted in the browser cannot survive into the
+        // authenticated session.
+        $this->customerSession->regenerateId();
+        $this->customerSession->setCustomerDataAsLoggedIn($customer);
 
-            // Get current session ID before login
-            $oldSessionId = session_id();
-            $this->logger->info('Old session ID: ' . $oldSessionId);
-
-            // Log in the customer using Magento's session system
-            $this->customerSession->setCustomerDataAsLoggedIn($customer);
-
-            // Force session regeneration and ensure it's saved
-            $this->customerSession->regenerateId();
-
-            // Get new session ID
-            $newSessionId = session_id();
-            $this->logger->info('New session ID: ' . $newSessionId);
-
-            // Verify session was created successfully
-            if (!$this->customerSession->isLoggedIn()) {
-                throw new LocalizedException(__('Failed to create customer session'));
-            }
-
-            // Force session write and close to ensure persistence
-            session_write_close();
-
-            // Restart session to verify persistence
-            session_start();
-
-            // Double check customer is still logged in
-            if (!$this->customerSession->isLoggedIn()) {
-                $this->logger->error('Session lost after restart for customer: ' . $customer->getEmail());
-                throw new LocalizedException(__('Session persistence failed'));
-            }
-
-            $this->logger->info('Customer session successfully created and verified for: ' . $customer->getEmail());
-
-        } catch (\Exception $e) {
-            $this->logger->error('Error creating customer session: ' . $e->getMessage());
-            $this->logger->error('Stack trace: ' . $e->getTraceAsString());
-            throw new LocalizedException(__('Unable to create customer session: ' . $e->getMessage()));
+        if (!$this->customerSession->isLoggedIn()) {
+            $this->logger->error('Social Login: failed to open a session for customer ' . $customer->getId());
+            throw new LocalizedException(__('Unable to create customer session.'));
         }
-    }
-
-    /**
-     * Create customer session with retry mechanism
-     *
-     * @param CustomerInterface $customer
-     * @throws LocalizedException
-     */
-    private function createCustomerSessionWithRetry(CustomerInterface $customer): void
-    {
-        $maxRetries = 3;
-        $retryCount = 0;
-        $lastException = null;
-
-        while ($retryCount < $maxRetries) {
-            try {
-                $this->createCustomerSession($customer);
-
-                // If we get here, session was created successfully
-                $this->logger->info('Customer session created successfully on attempt: ' . ($retryCount + 1));
-                return;
-
-            } catch (\Exception $e) {
-                $retryCount++;
-                $lastException = $e;
-                $this->logger->warning('Session creation attempt ' . $retryCount . ' failed: ' . $e->getMessage());
-
-                if ($retryCount < $maxRetries) {
-                    // Wait a short time before retry
-                    usleep(100000); // 100ms
-
-                    // Clear any existing session data before retry
-                    $this->customerSession->logout();
-
-                    $this->logger->info('Retrying session creation for customer: ' . $customer->getEmail());
-                }
-            }
-        }
-
-        // If we get here, all retries failed
-        $this->logger->error('All session creation attempts failed for customer: ' . $customer->getEmail());
-        throw new LocalizedException(__('Unable to create customer session after ' . $maxRetries . ' attempts: ' . $lastException->getMessage()));
     }
 }

@@ -27,7 +27,6 @@
             <advanced>
                 <redirect_url></redirect_url>
                 <debug_mode>0</debug_mode>
-                <auto_create_customer>1</auto_create_customer>
             </advanced>
         </webjump_social_login>
     </default>

@@ -36,7 +36,6 @@ class Data extends AbstractHelper
 
     const XML_PATH_REDIRECT_URL = 'webjump_social_login/advanced/redirect_url';
     const XML_PATH_DEBUG_MODE = 'webjump_social_login/advanced/debug_mode';
-    const XML_PATH_AUTO_CREATE = 'webjump_social_login/advanced/auto_create_customer';
 
     /**
      * @param Context $context
@@ -151,14 +150,6 @@ class Data extends AbstractHelper
         return $this->scopeConfig->isSetFlag(self::XML_PATH_DEBUG_MODE, ScopeInterface::SCOPE_STORE, $store);
     }
 
-    /**
-     * @param null|string|bool|int $store
-     * @return bool
-     */
-    public function getAutoCreateCustomer($store = null)
-    {
-        return $this->scopeConfig->isSetFlag(self::XML_PATH_AUTO_CREATE, ScopeInterface::SCOPE_STORE, $store);
-    }
 
     /**
      * Get widget configuration as JSON
@@ -225,10 +216,10 @@ class Data extends AbstractHelper
                 script.onload = function() {
                     function initializeWidget() {
                         if (typeof SocialLoginWidget !== 'undefined') {
-                            // Use JWT authentication if available
+                            // Route the widget result through the module so Magento opens the session
                             if (typeof require !== 'undefined') {
-                                require(['Webjump_SocialLogin/js/jwt-auth'], function(jwtAuth) {
-                                    jwtAuth.initSocialLoginWidget(config);
+                                require(['Webjump_SocialLogin/js/social-login-auth'], function(socialLoginAuth) {
+                                    socialLoginAuth.initSocialLoginWidget(config);
                                 });
                             } else {
                                 new SocialLoginWidget(config);
@@ -249,10 +240,10 @@ class Data extends AbstractHelper
             }
 
             if (typeof SocialLoginWidget !== 'undefined') {
-                // Use JWT authentication if available
+                // Route the widget result through the module so Magento opens the session
                 if (typeof require !== 'undefined') {
-                    require(['Webjump_SocialLogin/js/jwt-auth'], function(jwtAuth) {
-                        jwtAuth.initSocialLoginWidget(config);
+                    require(['Webjump_SocialLogin/js/social-login-auth'], function(socialLoginAuth) {
+                        socialLoginAuth.initSocialLoginWidget(config);
                     });
                 } else {
                     new SocialLoginWidget(config);
@@ -264,12 +255,12 @@ class Data extends AbstractHelper
     }
 
     /**
-     * Get JWT authentication callback URL
+     * Get the module's authentication callback URL
      *
      * @param null|string|bool|int $store
      * @return string
      */
-    public function getJwtCallbackUrl($store = null)
+    public function getAuthCallbackUrl($store = null)
     {
         return $this->_urlBuilder->getUrl('sociallogin/auth/callback', ['_store' => $store]);
     }
