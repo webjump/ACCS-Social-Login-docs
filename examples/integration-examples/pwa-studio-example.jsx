@@ -1,5 +1,5 @@
 /**
- * Exemplo de integração do Social Login Widget com PWA Studio
+ * Example integration of the Social Login Widget with PWA Studio
  * Copyright © Webjump. All rights reserved.
  */
 
@@ -34,7 +34,7 @@ const GENERATE_CUSTOMER_TOKEN_MUTATION = gql`
     }
 `;
 
-// GraphQL Query para configuração
+// GraphQL query for the widget configuration
 const GET_SOCIAL_LOGIN_CONFIG = gql`
     query GetSocialLoginConfig {
         storeConfig {
@@ -74,7 +74,7 @@ const useSocialLogin = () => {
                     email: data.user.email,
                     firstname: data.user.firstName || data.user.fullName.split(' ')[0] || 'Social',
                     lastname: data.user.lastName || data.user.fullName.split(' ').slice(1).join(' ') || 'User',
-                    // Gerar senha temporária para compliance com Magento
+                    // Generate a temporary password to satisfy Commerce's requirements
                     password: Math.random().toString(36).substring(2, 15)
                 };
 
@@ -97,13 +97,13 @@ const useSocialLogin = () => {
             }
 
             if (customerToken) {
-                // Definir token no contexto do usuário
+                // Set the token in the user context
                 await setToken(customerToken);
 
-                // Atualizar detalhes do usuário
+                // Refresh the user details
                 await getUserDetails();
 
-                // Merge cart se necessário
+                // Merge the guest cart if there is one
                 if (cartId) {
                     try {
                         await getCartDetails({ cartId });
@@ -130,7 +130,7 @@ const useSocialLogin = () => {
             console.error('Social login post-processing error:', error);
             addToast({
                 type: 'error',
-                message: `Erro ao processar login: ${error.message}`,
+                message: `Failed to process the login: ${error.message}`,
                 timeout: 7000
             });
         }
@@ -140,17 +140,17 @@ const useSocialLogin = () => {
         console.error('Social login failed:', error);
 
         const errorMessages = {
-            'network_error': 'Erro de conexão. Verifique sua internet.',
-            'auth_cancelled': 'Login cancelado pelo usuário.',
-            'invalid_credentials': 'Credenciais inválidas. Tente novamente.',
-            'server_error': 'Erro no servidor. Tente novamente mais tarde.'
+            'network_error': 'Connection error. Please check your internet connection.',
+            'auth_cancelled': 'Login cancelled.',
+            'invalid_credentials': 'Invalid credentials. Please try again.',
+            'server_error': 'Server error. Please try again later.'
         };
 
         const userMessage = errorMessages[error.code] || error.message;
 
         addToast({
             type: 'error',
-            message: `Erro no login social: ${userMessage}`,
+            message: `Social login error: ${userMessage}`,
             timeout: 7000
         });
     }, [addToast]);
@@ -191,7 +191,7 @@ const SocialLoginWidget = (props) => {
         currentUser
     } = useSocialLogin();
 
-    // Query para obter configuração do admin
+    // Query the configuration exposed by the admin
     const { data: configData, loading: configLoading, error: configQueryError } = useQuery(GET_SOCIAL_LOGIN_CONFIG, {
         fetchPolicy: 'cache-and-network'
     });
@@ -204,7 +204,7 @@ const SocialLoginWidget = (props) => {
 
         const apiEndpoint = configData.storeConfig.social_login_api_endpoint;
         if (!apiEndpoint) {
-            setConfigError('API endpoint não configurado');
+            setConfigError('API endpoint is not configured');
             setIsLoading(false);
             return;
         }
@@ -219,7 +219,7 @@ const SocialLoginWidget = (props) => {
         };
 
         script.onerror = () => {
-            setConfigError('Erro ao carregar script do widget');
+            setConfigError('Failed to load the widget script');
             setIsLoading(false);
         };
 
@@ -257,14 +257,14 @@ const SocialLoginWidget = (props) => {
             });
 
             return () => {
-                // Cleanup widget se necessário
+                // Clean up the widget if needed
                 if (widget && typeof widget.destroy === 'function') {
                     widget.destroy();
                 }
             };
         } catch (error) {
             console.error('Error initializing social login widget:', error);
-            setConfigError(`Erro ao inicializar widget: ${error.message}`);
+            setConfigError(`Failed to initialize the widget: ${error.message}`);
         }
     }, [
         isScriptLoaded,
@@ -280,12 +280,12 @@ const SocialLoginWidget = (props) => {
         handleSocialLoginError
     ]);
 
-    // Não renderizar se usuário já estiver logado
+    // Don't render when the user is already signed in
     if (currentUser && currentUser.email) {
         return null;
     }
 
-    // Não renderizar se social login estiver desabilitado
+    // Don't render when social login is disabled
     if (configData && !configData.storeConfig?.social_login_enabled) {
         return null;
     }
@@ -296,7 +296,7 @@ const SocialLoginWidget = (props) => {
             <div className={`${classes.container} ${className}`} {...restProps}>
                 <div className={classes.loading}>
                     <div className={classes.spinner} />
-                    <span>Carregando opções de login...</span>
+                    <span>Loading login options...</span>
                 </div>
             </div>
         );
@@ -408,13 +408,13 @@ export const cssModule = `
 }
 `;
 
-// Exemplo de uso no componente SignIn
+// Example usage inside the SignIn component
 export const SignInWithSocialLogin = () => {
     return (
         <div className="sign-in-page">
-            {/* Formulário de login tradicional */}
+            {/* Standard login form */}
             <form className="sign-in-form">
-                {/* Campos de email e senha */}
+                {/* Email and password fields */}
             </form>
 
             {/* Social Login Widget */}

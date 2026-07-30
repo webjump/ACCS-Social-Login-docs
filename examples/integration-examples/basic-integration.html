@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Integração Básica - Social Login</title>
+    <title>Basic Integration - Social Login</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -113,7 +113,7 @@
     <div class="login-container">
         <h1 class="title">Login - Adobe Commerce</h1>
 
-        <!-- Formulário de Login Tradicional -->
+        <!-- Standard login form -->
         <form class="traditional-login" onsubmit="handleTraditionalLogin(event)">
             <div class="form-group">
                 <label for="email">Email:</label>
@@ -125,7 +125,7 @@
                 <input type="password" id="password" name="password" required>
             </div>
 
-            <button type="submit" class="login-btn">Entrar</button>
+            <button type="submit" class="login-btn">Sign In</button>
         </form>
 
         <!-- Divisor -->
@@ -133,7 +133,7 @@
             <span>ou continue com</span>
         </div>
 
-        <!-- Social Login Widget - Configuração Básica -->
+        <!-- Social Login Widget - basic configuration -->
         <div id="social-login-widget"></div>
 
         <!-- Container para mensagens -->
@@ -143,23 +143,23 @@
     <!-- Carregar Social Login Widget -->
     <script src="https://your-app-domain.adobe.io/SocialLoginWidget.js"></script>
     <script>
-        // Aguardar SocialLoginWidget estar disponível antes de inicializar
+        // Wait for SocialLoginWidget to be available before initializing
         function initializeSocialLogin() {
             if (typeof SocialLoginWidget === 'undefined') {
                 setTimeout(initializeSocialLogin, 100);
                 return;
             }
 
-            // Configuração básica do Social Login Widget
+            // Basic Social Login Widget configuration
             const socialLoginWidget = new SocialLoginWidget({
-            // Configuração obrigatória
+            // Required configuration
             containerId: 'social-login-widget',
             apiEndpoint: 'https://your-app-domain.adobe.io/api/v1/social-login',
 
-            // Providers que você quer habilitar (escolha entre os disponíveis)
+            // Providers to enable (pick from the available ones)
             providers: ['google', 'meta'],
 
-            // Configurações visuais básicas
+            // Basic appearance settings
             theme: 'light',
             buttonSize: 'medium',
             showLabels: true,
@@ -179,12 +179,12 @@
                     'success'
                 );
 
-                // Armazenar token (em implementação real, use métodos mais seguros)
+                // Store the token (use a more secure mechanism in a real implementation)
                 if (data.token) {
                     sessionStorage.setItem('customer_token', data.token);
                 }
 
-                // Redirecionar após 2 segundos (simular redirecionamento)
+                // Redirect after 2 seconds (simulated redirect)
                 setTimeout(() => {
                     showMessage('🚀 Redirecionando para sua conta...', 'success');
                     // window.location.href = '/customer/account/';
@@ -196,11 +196,11 @@
                 console.error('Social login failed:', error);
 
                 // Mostrar mensagem de erro
-                showMessage(`❌ Erro no login: ${error.message}`, 'error');
+                showMessage(`❌ Login error: ${error.message}`, 'error');
             }
         });
 
-        // Função para simular login tradicional
+        // Simulates a standard login
         function handleTraditionalLogin(event) {
             event.preventDefault();
 
@@ -212,14 +212,14 @@
             // Simular processamento
             setTimeout(() => {
                 if (email && password) {
-                    showMessage(`✅ Login tradicional realizado!<br>Bem-vindo, ${email}`, 'success');
+                    showMessage(`✅ Signed in!<br>Welcome, ${email}`, 'success');
                 } else {
-                    showMessage('❌ Email e senha são obrigatórios', 'error');
+                    showMessage('❌ Email and password are required', 'error');
                 }
             }, 1000);
         }
 
-        // Função auxiliar para mostrar mensagens
+        // Helper that renders a message
         function showMessage(text, type) {
             const messagesContainer = document.getElementById('messages');
             const messageDiv = document.createElement('div');
@@ -230,7 +230,7 @@
             messagesContainer.innerHTML = '';
             messagesContainer.appendChild(messageDiv);
 
-            // Remover mensagem após 5 segundos
+            // Remove the message after 5 seconds
             setTimeout(() => {
                 if (messageDiv.parentNode) {
                     messageDiv.remove();
@@ -246,11 +246,11 @@
             initializeSocialLogin();
         }
 
-        // Verificar se já existe token armazenado
+        // Check whether a token is already stored
         window.addEventListener('load', () => {
             const token = sessionStorage.getItem('customer_token');
             if (token) {
-                showMessage('ℹ️ Você já está logado! Token encontrado na sessão.', 'success');
+                showMessage('ℹ️ You are already signed in - a token was found in this session.', 'success');
             }
         });
     </script>

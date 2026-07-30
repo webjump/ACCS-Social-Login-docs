@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Integração Avançada - Social Login com Configuração Dinâmica</title>
+    <title>Advanced Integration - Social Login with Dynamic Configuration</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -212,10 +212,10 @@
 </head>
 <body>
     <div class="container">
-        <!-- Painel de Configuração -->
+        <!-- Configuration panel -->
         <div class="config-panel">
-            <h2>🎛️ Configuração Dinâmica</h2>
-            <p><small>Configure o Social Login Widget em tempo real (simula configuração via Adobe Commerce Admin)</small></p>
+            <h2>🎛️ Dynamic Configuration</h2>
+            <p><small>Configure the Social Login Widget in real time (simulates configuring it from the Adobe Commerce Admin)</small></p>
 
             <form id="config-form">
                 <div class="form-group">
@@ -249,7 +249,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="button-size">Tamanho dos Botões:</label>
+                    <label for="button-size">Button Size:</label>
                     <select id="button-size">
                         <option value="small">Small</option>
                         <option value="medium" selected>Medium</option>
@@ -269,7 +269,7 @@
                     <input type="text" id="redirect-url" placeholder="/customer/account/">
                 </div>
 
-                <button type="submit" class="apply-btn">🚀 Aplicar Configuração</button>
+                <button type="submit" class="apply-btn">🚀 Apply Configuration</button>
             </form>
 
             <div id="config-status"></div>
@@ -280,20 +280,20 @@
             <h1 class="login-title">Adobe Commerce Login</h1>
 
             <div class="divider">
-                <span>Faça login com suas redes sociais</span>
+                <span>Sign in with your social account</span>
             </div>
 
             <!-- Container do Widget -->
             <div id="social-login-widget" class="widget-container">
                 <div class="widget-placeholder">
-                    Configure os providers ao lado e clique em "Aplicar Configuração"
+                    Configure the providers on the left and click "Apply Configuration"
                 </div>
             </div>
 
             <!-- Container para mensagens -->
             <div id="messages" class="messages"></div>
 
-            <!-- Simulação de formulário tradicional -->
+            <!-- Simulated standard login form -->
             <div class="divider">
                 <span>ou use login tradicional</span>
             </div>
@@ -304,9 +304,9 @@
                            style="margin-bottom: 10px;" id="email-field">
                 </div>
                 <div class="form-group">
-                    <input type="password" placeholder="Sua senha" required id="password-field">
+                    <input type="password" placeholder="Your password" required id="password-field">
                 </div>
-                <button type="submit" class="apply-btn">Entrar com Email</button>
+                <button type="submit" class="apply-btn">Sign In with Email</button>
             </form>
         </div>
     </div>
@@ -335,19 +335,19 @@
                 };
 
                 script.onerror = () => {
-                    reject(new Error('Falha ao carregar script do widget'));
+                    reject(new Error('Failed to load the widget script'));
                 };
 
                 document.head.appendChild(script);
             });
         }
 
-        // Aplicar configuração do widget
+        // Apply the widget configuration
         async function applyConfiguration() {
             try {
-                showConfigStatus('🔄 Carregando configuração...', 'info');
+                showConfigStatus('🔄 Loading configuration...', 'info');
 
-                // Coletar configuração do formulário
+                // Collect the configuration from the form
                 const config = getConfigFromForm();
 
                 if (config.providers.length === 0) {
@@ -384,13 +384,13 @@
                             `✅ <strong>Login realizado com sucesso!</strong><br>
                              Provider: ${providerName}<br>
                              Email: ${data.user.email}<br>
-                             Ação: ${data.action === 'created' ? 'Conta criada' : 'Login realizado'}`,
+                             Action: ${data.action === 'created' ? 'Account created' : 'Signed in'}`,
                             'success'
                         );
 
                         if (data.token) {
                             sessionStorage.setItem('customer_token', data.token);
-                            showMessage('🔐 Token armazenado com segurança', 'info');
+                            showMessage('🔐 Token stored securely', 'info');
                         }
 
                         // Simular redirecionamento
@@ -405,22 +405,22 @@
 
                     onError: function(error) {
                         console.error('Social login failed:', error);
-                        showMessage(`❌ <strong>Erro no login:</strong><br>${error.message}`, 'error');
+                        showMessage(`❌ <strong>Login error:</strong><br>${error.message}`, 'error');
                     }
                 });
 
                 // Marcar container como carregado
                 document.getElementById('social-login-widget').classList.add('loaded');
 
-                showConfigStatus('✅ Configuração aplicada com sucesso!', 'success');
+                showConfigStatus('✅ Configuration applied.', 'success');
 
             } catch (error) {
                 console.error('Configuration error:', error);
-                showConfigStatus(`❌ Erro na configuração: ${error.message}`, 'error');
+                showConfigStatus(`❌ Configuration error: ${error.message}`, 'error');
             }
         }
 
-        // Coletar configuração do formulário
+        // Collect the configuration from the form
         function getConfigFromForm() {
             const providers = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
                 .filter(cb => cb.value && cb.value !== 'show-labels')
@@ -436,7 +436,7 @@
             };
         }
 
-        // Mostrar status da configuração
+        // Render the configuration status
         function showConfigStatus(message, type) {
             const statusDiv = document.getElementById('config-status');
             statusDiv.className = `status ${type}`;
@@ -464,7 +464,7 @@
 
             messagesContainer.appendChild(messageDiv);
 
-            // Remover após 8 segundos
+            // Remove after 8 seconds
             setTimeout(() => {
                 if (messageDiv.parentNode) {
                     messageDiv.remove();
@@ -489,9 +489,9 @@
 
             setTimeout(() => {
                 if (email && password) {
-                    showMessage(`✅ <strong>Login tradicional realizado!</strong><br>Bem-vindo, ${email}`, 'success');
+                    showMessage(`✅ <strong>Signed in.</strong><br>Welcome, ${email}`, 'success');
                 } else {
-                    showMessage('❌ Email e senha são obrigatórios', 'error');
+                    showMessage('❌ Email and password are required', 'error');
                 }
             }, 1000);
         }
@@ -500,9 +500,9 @@
         window.addEventListener('load', () => {
             const token = sessionStorage.getItem('customer_token');
             if (token) {
-                showMessage('ℹ️ Token de sessão encontrado - Você já está logado!', 'info');
+                showMessage('ℹ️ Session token found - you are already signed in.', 'info');
             } else {
-                showMessage('👋 Bem-vindo! Configure o Social Login ao lado para começar.', 'info');
+                showMessage('👋 Welcome. Configure Social Login on the left to get started.', 'info');
             }
         });
     </script>
