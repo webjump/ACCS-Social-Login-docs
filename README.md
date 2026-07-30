@@ -126,7 +126,12 @@ After installation, you will need to configure the extension with your credentia
 
 Fill in your Adobe Commerce information:
 
-This extension supports **both Adobe Commerce PaaS** (Cloud/on-premises) **and Adobe Commerce SaaS** (Adobe Commerce as a Cloud Service). **PaaS and SaaS use structurally different API endpoints, not just different credentials** — fill in **only one** of the two credential blocks below, matching your Commerce flavor. If both are filled in, the PaaS (OAuth) credentials take priority.
+This extension supports **both Adobe Commerce PaaS** (Cloud/on-premises) **and Adobe Commerce SaaS** (Adobe Commerce as a Cloud Service). **PaaS and SaaS use structurally different API endpoints, not just different credentials** — fill in **only one** of the two credential blocks below, matching your Commerce flavor. If both credential types are filled in, the OAuth 1.0a credentials take priority.
+
+Two separate things are being configured here, and the extension treats them independently:
+
+- **Which Commerce flavor you have** comes from the endpoint you fill in — an **Adobe Commerce Base URL** means PaaS, a **Commerce as a Cloud Service API URL** plus **Instance ID** means SaaS. This determines the API paths used and which Commerce APIs are available at all.
+- **How the extension authenticates** comes from the credentials you fill in — OAuth 1.0a integration credentials, or an IMS technical account. IMS is also valid on **PaaS from Adobe Commerce 2.4.7+**; in that case the endpoints stay in the PaaS format.
 
 ### 3.3-PaaS: Obtain Commerce OAuth credentials (Adobe Commerce Cloud / on-premises)
 
@@ -200,12 +205,12 @@ Fill in the Meta/Facebook credentials you obtained in Step 1.2:
   - Example: `https://your-app.adobeio-static.net`
   - This URL should already be automatically filled in
 
-### 3.7 Configure CORS Origins
+### 3.7 Configure Log Level
 
-- **CORS Origins**: Add your site domains, separated by commas
-  - Example: `https://your-site.com,https://www.your-site.com`
-  - Add all domains where the widget will be used
-  - Note: this value is accepted for documentation/future use, but isn't currently enforced by the extension's actions — Adobe I/O Runtime sets Access-Control-Allow-Origin automatically instead. Filling it in doesn't restrict which domains can call the actions today.
+- **Log Level**: leave this at `info` for production
+  - Use `debug` only while troubleshooting — it writes considerably more request detail to the activation logs
+  - Set it back to `info` when you're done
+  - Tokens and passwords are never logged at any level
 
 ### 3.8 Save Settings
 
@@ -300,14 +305,7 @@ If you have access to your site's HTML code:
 If you use traditional Adobe Commerce, see the guide at:
 - `examples/magento-module/README.md`
 
-This module allows you to configure Social Login directly from the Adobe Commerce administrative panel.
-
-### Option 3: AEM Edge Delivery
-
-If you use AEM Edge Delivery Services, see the guide at:
-- `examples/aem-edge-integration/README.md`
-
-This guide shows how to integrate Social Login into AEM Edge blocks.
+This module allows you to configure Social Login directly from the Adobe Commerce administrative panel, and opens the customer session from the Commerce customer token the extension issues — validating it against Commerce's own token storage. If you adapt it, read the Authentication section of its README first: an endpoint that logs a shopper in based on data the browser supplied is an account takeover.
 
 ## 🔍 Common Troubleshooting
 
@@ -335,6 +333,16 @@ This guide shows how to integrate Social Login into AEM Edge blocks.
 2. Go to the Console tab
 3. Try logging in again
 4. See if there are error messages
+
+### Problem: "This email already has an Adobe Commerce account"
+
+This is expected behaviour, not a misconfiguration. It happens when the shopper already had a **regular** Adobe Commerce account — created with an email and password — using the same email address as their social account.
+
+To hand the shopper a real Commerce session, the extension exchanges the password it generated when it created their account. An account it didn't create has no such credential on file, so no session token can be issued for it. The extension answers with `409 ACCOUNT_LINK_REQUIRED` and the shopper sees the message above.
+
+**What the shopper should do**: sign in once with their existing email and password.
+
+**Known limitation**: the extension does not automatically link a pre-existing password account to a social identity. Doing so would mean resetting the shopper's password without their consent, which it deliberately does not do.
 
 ### Problem: Customer doesn't appear in Adobe Commerce
 
@@ -366,9 +374,9 @@ When a customer logs in with a social provider (Google or Facebook), the system 
 - If the customer exists, proceeds with that account
 
 **Step 2: Real Commerce Token Generation**
-- For a new customer, the extension generates a random password at account-creation time and stores it encrypted (AES-256) — this is what lets it request a real token later, since Adobe Commerce's token endpoint requires an actual username/password pair; there is no way to mint a customer token without one
-- The extension then exchanges that stored password for a genuine customer session token via Adobe Commerce's own token endpoint — REST `POST /V1/integration/customer/token` on PaaS, or the `generateCustomerToken` GraphQL mutation on SaaS (Commerce as a Cloud Service doesn't expose the REST customer/guest APIs available on PaaS)
-- If no stored credential is on file for a customer (for example, an account that already existed in Commerce before this extension was installed), login fails with a clear error rather than issuing a fabricated token
+- For a new customer, the extension generates a random password at account-creation time and stores it encrypted (AES-256-GCM) — this is what lets it request a real token later, since Adobe Commerce's token endpoint requires an actual username/password pair; there is no way to mint a customer token without one
+- The extension then exchanges that stored password for a genuine customer session token via Adobe Commerce's own token endpoint — REST `POST /V1/integration/customer/token` on PaaS, or the `generateCustomerToken` GraphQL mutation on SaaS (Commerce as a Cloud Service doesn't expose the REST customer/guest APIs available on PaaS). Which one is used depends on your **Commerce flavor**, not on which credentials authenticate the call
+- If no stored credential is on file for a customer — typically an account that already existed in Commerce before this extension was installed — the extension answers with a specific, actionable result (`409 ACCOUNT_LINK_REQUIRED`) asking the shopper to sign in with their password once, instead of a generic failure. See [this account already exists](#problem-this-email-already-has-an-adobe-commerce-account) in the troubleshooting section
 
 ### Security Layers Implemented
 
@@ -387,13 +395,22 @@ When a customer logs in with a social provider (Google or Facebook), the system 
 - A one-time-use authentication token (5-minute expiration) links the OAuth callback to the token-generation step
 - An internally signed token (HMAC) proves a customer-creation request actually came from a completed OAuth flow, not a direct call
 
+**4. Identity Binding**
+
+The extension's actions are public web endpoints — they have to be, because they're called by your storefront and by the OAuth providers' redirects. What protects them is that every step is bound to the identity the provider actually verified:
+
+- The internally signed token carries the verified email, provider and provider id. If the data submitted alongside it disagrees in any way, the request is rejected — the email can't be swapped in the browser
+- Accounts are matched by email address, so an email the social provider hasn't verified is refused outright
+- The one-time authentication token is bound to the email it was issued for. It cannot be used to request a session for a different account, and every lookup afterwards uses the email from the validated token rather than whatever the request body says
+- Each token is consumed on first use, so a captured token can't be replayed
+
 ### What This Means for You
 
 **Data Security**: Customer data and the session token both come directly from your Adobe Commerce instance — nothing is fabricated locally.
 
-**Predictable failure**: if Adobe Commerce can't issue a token (misconfigured permissions, unreachable instance, pre-existing customer with no stored credential), login fails visibly with an error, rather than silently degrading to a token your storefront might not fully trust.
+**Predictable failure**: if Adobe Commerce can't issue a token (misconfigured permissions, unreachable instance), login fails visibly with an error, rather than silently degrading to a token your storefront might not fully trust. The one case that isn't a failure at all — a pre-existing account with no stored credential — gets its own actionable response so your storefront can tell the shopper exactly what to do.
 
-**Monitoring**: The system logs authentication attempts for security monitoring, without logging tokens or passwords.
+**Monitoring**: The system logs authentication attempts for security monitoring, without logging tokens or passwords at any log level.
 
 ### Authentication Response Information
 
@@ -425,6 +442,7 @@ For production, make sure to:
 - Official API authentication (OAuth 1.0a for PaaS, IMS for SaaS)
 - The **Customers** ACL resource enabled on the integration/technical account used
 - Keep the extension's internal secrets (Internal Authentication Secret, Customer Password Encryption Key) stable — rotating the Customer Password Encryption Key invalidates every stored customer credential, requiring affected customers to log in again to get a new one issued
+- Keep **Log Level** at `info` — `debug` is for troubleshooting only and writes far more request detail to the activation logs
 
 ### Best Practices for Security
 
@@ -436,12 +454,14 @@ For production, make sure to:
 
 ### Common Error Codes
 
-**401**: Authentication failed — invalid/expired auth token, customer not found, missing Commerce permissions, or no stored credential for that customer
+**401**: Authentication failed — the authentication token is invalid, expired, already used, or was issued for a different email address; or the customer wasn't found in Commerce
+**403**: The social provider hasn't verified the email address on that account, so it can't be matched to a Commerce customer
+**409 `ACCOUNT_LINK_REQUIRED`**: the email already has a regular Adobe Commerce account that wasn't created by this extension — see [this account already exists](#problem-this-email-already-has-an-adobe-commerce-account)
 **500**: Commerce configuration missing (base URL, credentials, or internal secrets not set)
 
 ### Problem: CORS Error
 
-CORS errors are unusual for this extension, since Adobe I/O Runtime sets the required header automatically for its web actions — the **CORS Origins** setting is currently accepted but not enforced by the extension's own code. If you do see one:
+CORS errors are unusual for this extension, since Adobe I/O Runtime sets the required header automatically for its web actions. If you do see one:
 
 **Possible causes and solutions**:
 - **Incorrect protocol**: Make sure to use `https://` in domains you reference from the widget
