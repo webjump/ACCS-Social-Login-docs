@@ -214,14 +214,31 @@ Fill in the Meta/Facebook credentials you obtained in Step 1.2:
   - The **Widget Domain** is always allowed automatically; you don't need to list it
   - Leaving this empty accepts requests from any origin and delivers the login result to whichever page opened the login popup
 
-### 3.8 Configure Log Level
+### 3.8 Configure the internal secrets (required)
+
+These two are **required** — without them every login fails with `500 Commerce configuration missing`. The extension doesn't generate them for you.
+
+Generate a different random value for each. On any machine with Node.js installed:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+- **Internal Authentication Secret**: signs the internal token that proves a customer request came from a completed OAuth flow, rather than someone calling the action directly
+- **Customer Password Encryption Key**: encrypts (AES-256-GCM) the password generated for each social-login customer, so a real Commerce customer token can be issued for them later
+
+Both must stay **stable** in production:
+- Rotating the **Customer Password Encryption Key** invalidates every stored customer credential. Affected shoppers get `409 ACCOUNT_LINK_REQUIRED` on their next social login and have to sign in with their password once so a new credential is issued
+- Rotating the **Internal Authentication Secret** only invalidates logins already in flight (those tokens live 2 minutes)
+
+### 3.9 Configure Log Level
 
 - **Log Level**: leave this at `info` for production
   - Use `debug` only while troubleshooting — it writes considerably more request detail to the activation logs
   - Set it back to `info` when you're done
   - Tokens and passwords are never logged at any level
 
-### 3.9 Save Settings
+### 3.10 Save Settings
 
 1. Review all settings
 2. Click **Save** or **Apply**
