@@ -423,10 +423,19 @@ When a customer logs in with a social provider (Google or Facebook), the system 
 
 **4. Origin Allowlist**
 - With **CORS Origins** configured (Step 3.7), browser requests from any other origin are refused with `403`, and `Access-Control-Allow-Origin` is echoed back only for allowed origins
-- The login result — which carries a real Commerce customer session token — is delivered only to those origins, instead of to whichever page opened the login popup
+- The login result is delivered only to those origins, instead of to whichever page opened the login popup
 - The **Widget Domain** is allowed implicitly, since the OAuth callback page is served from there and calls these same actions
 
-**5. Identity Binding**
+**5. The session token stays out of the return channel**
+
+Google's sign-in pages sever the popup's link back to your storefront (`Cross-Origin-Opener-Policy`), so the extension also parks the login outcome server-side under the OAuth `state` and the storefront polls for it. That `state` is not a secret — it passes through the social provider and appears in URLs, browser history and the provider's logs — so the channel is built on the assumption that it leaks:
+
+- What gets parked is the **one-time authentication token** (5-minute expiration, single use, tied to one email address), never a Commerce customer session token. Your storefront redeems it for the session token in a separate, origin-checked call. Someone holding the `state` can at most consume that single redemption — they never get a reusable session
+- Parking a **successful** outcome requires the internally signed token, which only the extension's own OAuth callback can produce, and only for the exact `state` it was issued against. So an attacker can't complete a login of their own and park its result under someone else's `state` to log that shopper into an account the attacker controls
+- Error messages come from a fixed list inside the extension, never from whoever made the request
+- The outcome is written once and read once, then deleted, and expires on its own after 10 minutes
+
+**6. Identity Binding**
 
 The extension's actions are public web endpoints — they have to be, because they're called by your storefront and by the OAuth providers' redirects. What protects them is that every step is bound to the identity the provider actually verified:
 
