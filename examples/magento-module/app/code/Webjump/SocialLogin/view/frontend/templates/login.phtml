@@ -26,7 +26,7 @@ $containerId = 'webjump-social-login-widget-' . rand(1000, 9999);
 
     <?php if ($position !== 'replace_form'): ?>
         <div class="social-login-divider">
-            <span><?= $escaper->escapeHtml(__('ou continue com')) ?></span>
+            <span><?= $escaper->escapeHtml(__('or continue with')) ?></span>
         </div>
     <?php endif; ?>
 
@@ -85,10 +85,10 @@ require(['jquery', 'domReady!'], function($) {
         console.error('Social login failed:', error);
 
         var errorMessages = {
-            'network_error': '<?= $escaper->escapeJs(__('Erro de conexão. Verifique sua internet.')) ?>',
-            'auth_cancelled': '<?= $escaper->escapeJs(__('Login cancelado pelo usuário.')) ?>',
-            'invalid_credentials': '<?= $escaper->escapeJs(__('Credenciais inválidas. Tente novamente.')) ?>',
-            'server_error': '<?= $escaper->escapeJs(__('Erro no servidor. Tente novamente mais tarde.')) ?>'
+            'network_error': '<?= $escaper->escapeJs(__('Connection error. Please check your internet connection.')) ?>',
+            'auth_cancelled': '<?= $escaper->escapeJs(__('Login cancelled.')) ?>',
+            'invalid_credentials': '<?= $escaper->escapeJs(__('Invalid credentials. Please try again.')) ?>',
+            'server_error': '<?= $escaper->escapeJs(__('Server error. Please try again later.')) ?>'
         };
 
         var userMessage = errorMessages[error.code] || error.message;

@@ -1,12 +1,12 @@
-# Módulo Adobe Commerce - Webjump Social Login
+# Adobe Commerce Module - Webjump Social Login
 
-Este módulo completo para Adobe Commerce permite configurar e gerenciar o Social Login Widget diretamente através do painel administrativo.
+This complete module for Adobe Commerce lets you configure and manage the Social Login Widget directly from the admin panel.
 
-## 🚀 Funcionalidades
+## 🚀 Features
 
-### ✅ Configuração via Admin Panel
-- **Habilitar/Desabilitar** o Social Login globalmente
-- **Seleção de Providers**: Escolha quais provedores OAuth habilitar:
+### ✅ Configuration via Admin Panel
+- **Enable/Disable** Social Login globally
+- **Provider Selection**: Choose which OAuth providers to enable:
   - Google
   - Meta/Facebook
   - LinkedIn
@@ -16,127 +16,182 @@ Este módulo completo para Adobe Commerce permite configurar e gerenciar o Socia
   - Pinterest
   - Instagram
 
-### 🎨 Personalização Visual
-- **Temas**: Light, Dark ou Default
-- **Tamanho dos Botões**: Small, Medium ou Large
-- **Labels**: Mostrar/Ocultar nomes dos provedores
-- **Posicionamento**: Antes, após ou substituindo o formulário de login
+### 🎨 Visual Customization
+- **Themes**: Light, Dark, or Default
+- **Button Size**: Small, Medium, or Large
+- **Labels**: Show/hide provider names
+- **Positioning**: Before, after, or replacing the login form
 
-### ⚙️ Configurações Avançadas
-- URL de redirecionamento personalizada
-- Modo debug para desenvolvimento
-- Criação automática de clientes
-- Cache inteligente para performance
+### ⚙️ Advanced Configuration
+- Custom redirect URL
+- Debug mode for development
+- Smart caching for performance
 
-## 📁 Estrutura do Módulo
+### 🔐 How the session is opened
+- The App Builder application hands the storefront a **real Adobe Commerce customer token**
+- The module validates that token against Commerce's own token storage and opens the session for the customer it belongs to
+- It accepts nothing else — no email, no profile data, no signed payload from the browser
+
+## 📁 Module Structure
 
 ```
 app/code/Webjump/SocialLogin/
-├── registration.php                    # Registro do módulo
+├── registration.php                    # Module registration
 ├── etc/
-│   ├── module.xml                     # Definição do módulo
-│   ├── config.xml                     # Configurações padrão
-│   ├── acl.xml                        # Permissões de acesso
+│   ├── module.xml                     # Module definition
+│   ├── config.xml                     # Default configuration
+│   ├── acl.xml                        # Access permissions
 │   └── adminhtml/
-│       └── system.xml                 # Interface de configuração admin
+│       └── system.xml                 # Admin configuration interface
 ├── Helper/
-│   └── Data.php                       # Helper principal com getters de configuração
+│   └── Data.php                       # Main helper with configuration getters
 ├── Block/
-│   └── Login.php                      # Block para renderização frontend
+│   └── Login.php                      # Block for frontend rendering
+├── Api/
+│   └── CustomerTokenAuthenticationInterface.php  # Authentication contract
+├── Controller/Auth/
+│   └── Callback.php                   # Receives the Commerce customer token
+├── Model/
+│   └── CustomerTokenAuthentication.php # Token validation + session creation
 ├── Model/Config/Source/
-│   ├── Theme.php                      # Opções de tema
-│   ├── ButtonSize.php                 # Opções de tamanho
-│   └── Position.php                   # Opções de posicionamento
+│   ├── Theme.php                      # Theme options
+│   ├── ButtonSize.php                 # Size options
+│   └── Position.php                   # Positioning options
 └── view/frontend/
     ├── layout/
-    │   └── customer_account_login.xml # Layout da página de login
-    └── templates/
-        └── login.phtml                # Template principal
+    │   └── customer_account_login.xml # Login page layout
+    ├── templates/
+    │   └── login.phtml                # Main template
+    └── web/js/
+        └── social-login-auth.js       # Posts the token to the controller
 ```
 
-## 📦 Instalação
+## 📦 Installation
 
-### 1. Copiar Arquivos
+### 1. Copy Files
 ```bash
-# Copie todo o diretório para seu Adobe Commerce
+# Copy the entire directory into your Adobe Commerce install
 cp -r app/code/Webjump/SocialLogin /path/to/your/magento/app/code/Webjump/SocialLogin
 ```
 
-### 2. Ativar Módulo
+### 2. Enable the Module
 ```bash
-# Via linha de comando
+# Via command line
 php bin/magento module:enable Webjump_SocialLogin
 php bin/magento setup:upgrade
 php bin/magento cache:clean
 ```
 
-### 3. Verificar Instalação
+### 3. Verify Installation
 ```bash
-# Confirmar que o módulo está ativo
+# Confirm the module is active
 php bin/magento module:status Webjump_SocialLogin
 ```
 
-## ⚙️ Configuração
+## ⚙️ Configuration
 
-### 1. Acessar Configurações
-Vá para: **Admin Panel > Stores > Configuration > Webjump > Social Login**
+### 1. Access Settings
+Go to: **Admin Panel > Stores > Configuration > Webjump > Social Login**
 
-### 2. Configurações Básicas
-- **Habilitar Social Login**: Ative o módulo
-- **API Endpoint**: Configure a URL do seu Adobe App Builder (ex: `https://your-domain.adobe.io/api/v1/social-login`)
+### 2. Basic Settings
+- **Enable Social Login**: Activate the module
+- **API Endpoint**: Configure your Adobe App Builder URL (e.g., `https://your-domain.adobe.io/api/v1/social-login`)
 
-### 3. Selecionar Providers
-Marque os provedores OAuth que deseja habilitar:
-- ✅ Google (recomendado)
+### 3. Select Providers
+Check the OAuth providers you want to enable:
+- ✅ Google (recommended)
 - ✅ Meta/Facebook
 - ✅ LinkedIn
-- ⚠️ PayPal (requer configuração adicional)
-- ⚠️ Apple (requer Apple Developer Program)
-- ⚠️ Twitter (requer configuração OAuth 2.0)
-- ⚠️ Pinterest (requer Pinterest Developer Account)
+- ⚠️ PayPal (requires additional configuration)
+- ⚠️ Apple (requires Apple Developer Program)
+- ⚠️ Twitter (requires OAuth 2.0 configuration)
+- ⚠️ Pinterest (requires Pinterest Developer Account)
 - ⚠️ Instagram (via Meta Developer)
 
-### 4. Personalizar Aparência
-- **Tema**: Escolha entre Light, Dark ou Default
-- **Tamanho**: Small, Medium ou Large
-- **Labels**: Mostrar/ocultar nomes dos provedores
-- **Posição**: Onde exibir os botões na página de login
+### 4. Customize Appearance
+- **Theme**: Choose between Light, Dark, or Default
+- **Size**: Small, Medium, or Large
+- **Labels**: Show/hide provider names
+- **Position**: Where to display the buttons on the login page
 
-### 5. Configurações Avançadas
-- **URL de Redirecionamento**: Para onde enviar após login (padrão: conta do cliente)
-- **Modo Debug**: Ativar apenas durante desenvolvimento
-- **Criação Automática**: Criar cliente automaticamente no primeiro login
+### 5. Advanced Settings
+- **Redirect URL**: Where to send the customer after login (default: customer account)
+- **Debug Mode**: Enable only during development
 
-## 🆕 Novidades da Versão
+Creating the customer account is the App Builder application's job, not the
+module's — there is no "create customer" setting here on purpose. See
+[Authentication](#-authentication) below.
 
-### ✅ Carregamento Inteligente de Scripts
-- **Auto-detecção**: Detecta automaticamente arquivos JavaScript com hash do build
-- **Fallbacks**: Sistema de fallback tenta múltiplas URLs se uma falhar
-- **Proteção contra Undefined**: Proteção defensiva contra dados indefinidos dos providers OAuth
-- **Aguarda Carregamento**: Aguarda o SocialLoginWidget estar disponível antes de inicializar
+## 🆕 What's New in This Version
 
-### ✅ Todos os 8 Providers OAuth
-- Suporte completo para todos os 8 provedores OAuth
-- Seleção granular no admin panel
-- Configuração otimizada para produção
+### ✅ Smart Script Loading
+- **Auto-detection**: Automatically detects JavaScript files with the build hash
+- **Fallbacks**: Fallback system tries multiple URLs if one fails
+- **Undefined Protection**: Defensive protection against undefined data from OAuth providers
+- **Waits for Load**: Waits for SocialLoginWidget to be available before initializing
 
-## 🔧 Personalização
+### ✅ All 8 OAuth Providers
+- Full support for all 8 OAuth providers
+- Granular selection in the admin panel
+- Configuration optimized for production
+
+## 🔐 Authentication
+
+### The flow
+
+1. The shopper completes the OAuth flow in the widget.
+2. The App Builder application finds or creates the customer in Adobe Commerce and
+   returns a **genuine Commerce customer access token** — the same kind
+   `POST /V1/integration/customer/token` issues.
+3. `social-login-auth.js` posts that token to `sociallogin/auth/callback`.
+4. `CustomerTokenAuthentication` looks the token up in Commerce's token storage
+   (the same source `Magento\Webapi\Model\Authorization\TokenUserContext` uses for
+   REST requests), checks that it is not revoked or expired and that it belongs to
+   a **customer** rather than an admin or integration, and opens the session for
+   that customer id.
+
+### Why it is built this way
+
+The token is the only thing that establishes identity, and it can't be forged: a
+made-up token has no matching row in Commerce, so it is refused. The customer id
+comes from that row — never from the request.
+
+This is the reason the module deliberately does **not**:
+
+- accept an email address, profile payload, or any self-describing token from the
+  browser — that would move the trust decision to whoever calls the endpoint;
+- create or update customer accounts — the App Builder application already did
+  that, with the provider-verified identity, before any token existed;
+- attempt client-side validation of the token — a check in the browser is
+  advisory at best, and implies a guarantee it can't make.
+
+If you adapt this module, keep those three properties. An endpoint that logs a
+shopper in based on data the browser supplied is an account takeover, regardless
+of how the data is encoded.
+
+### Session handling
+
+The session id is regenerated **before** the customer is logged in, so a session
+id planted in the browser beforehand cannot survive into the authenticated
+session (session fixation).
+
+## 🔧 Customization
 
 ### Custom CSS
-Adicione estilos personalizados no seu tema:
+Add custom styles in your theme:
 
 ```css
 .webjump-social-login-container {
-    /* Seus estilos personalizados */
+    /* Your custom styles */
 }
 
 .webjump-social-login-container.theme-dark {
-    /* Estilos para tema escuro */
+    /* Dark theme styles */
 }
 ```
 
-### Layout Personalizado
-Crie um layout personalizado em seu tema:
+### Custom Layout
+Create a custom layout in your theme:
 
 ```xml
 <!-- app/design/frontend/YourVendor/YourTheme/Webjump_SocialLogin/layout/customer_account_login.xml -->
@@ -148,90 +203,90 @@ Crie um layout personalizado em seu tema:
 </page>
 ```
 
-### Template Personalizado
-Substitua o template padrão:
+### Custom Template
+Replace the default template:
 
 ```php
 <!-- app/design/frontend/YourVendor/YourTheme/Webjump_SocialLogin/templates/custom-login.phtml -->
 <?php /** @var \Webjump\SocialLogin\Block\Login $block */ ?>
-<!-- Seu template personalizado -->
+<!-- Your custom template -->
 ```
 
-## 🛠️ Desenvolvimento
+## 🛠️ Development
 
-### Configuração de Desenvolvimento
+### Development Configuration
 ```php
-// app/etc/env.php - adicione para desenvolvimento
+// app/etc/env.php - add for development
 'webjump_social_login' => [
     'debug' => true,
     'api_endpoint' => 'http://localhost:9080/api/v1/social-login'
 ]
 ```
 
-### Debug e Logs
+### Debug and Logs
 ```bash
-# Acompanhar logs do módulo
+# Follow module logs
 tail -f var/log/system.log | grep "social.login"
 ```
 
-### Extensões
-O módulo pode ser estendido através de:
-- **Observers**: Para interceptar eventos de login
-- **Plugins**: Para modificar comportamentos
-- **Preferences**: Para substituir classes
+### Extensions
+The module can be extended through:
+- **Observers**: To intercept login events
+- **Plugins**: To modify behaviors
+- **Preferences**: To replace classes
 
 ## 🔍 Troubleshooting
 
-### Módulo Não Aparece
+### Module Doesn't Appear
 ```bash
-# Verificar se o módulo está registrado
+# Check if the module is registered
 php bin/magento module:status | grep Webjump
 
-# Forçar reindexação
+# Force reindex
 php bin/magento indexer:reindex
 ```
 
-### Widget Não Carrega
-1. **API Endpoint**: Verifique se o API Endpoint está correto no admin
-2. **Adobe App Builder**: Confirme que o App Builder está funcionando
-3. **Console**: Verifique console do navegador para erros JavaScript
-4. **Script Hash**: O módulo agora detecta automaticamente arquivos JavaScript com hash do build
-5. **Fallbacks**: Sistema de fallback tenta múltiplas URLs automaticamente
+### Widget Doesn't Load
+1. **API Endpoint**: Check whether the API Endpoint is correct in the admin
+2. **Adobe App Builder**: Confirm the App Builder is working
+3. **Console**: Check the browser console for JavaScript errors
+4. **Script Hash**: The module now automatically detects JavaScript files with the build hash
+5. **Fallbacks**: The fallback system automatically tries multiple URLs
 
-### Providers Não Funcionam
-1. Confirme credenciais OAuth nos arquivos de environment
-2. Verifique se os providers estão habilitados no admin
-3. Teste isoladamente cada provider
+### Providers Don't Work
+1. Confirm OAuth credentials in the environment files
+2. Verify the providers are enabled in the admin
+3. Test each provider in isolation
 
-## 📋 Requisitos
+## 📋 Requirements
 
 ### Adobe Commerce
-- Adobe Commerce 2.4.x ou superior
-- PHP 7.4 ou superior
-- Extensões PHP: json, curl, openssl
+- Adobe Commerce 2.4.x or higher
+- PHP 7.4 or higher
+- PHP extensions: json, curl, openssl
 
 ### Adobe App Builder
-- Social Login App implantado e funcionando
-- Credenciais OAuth configuradas
-- Endpoints acessíveis publicamente
+- Social Login App deployed and working
+- OAuth credentials configured
+- Publicly accessible endpoints
 
-## 🆘 Suporte
+## 🆘 Support
 
-### Problemas Comuns
-- **Cache**: Sempre limpe cache após alterações de configuração
-- **CORS**: Configure CORS_ORIGINS no Adobe App Builder
-- **SSL**: Use HTTPS em produção para todos os providers
+### Common Issues
+- **Cache**: Always clear the cache after configuration changes
+- **CORS**: Configure CORS_ORIGINS in Adobe App Builder
+- **SSL**: Use HTTPS in production for all providers
 
-### Logs Úteis
-- `var/log/system.log` - Logs gerais do Magento
-- `var/log/exception.log` - Erros PHP
-- Browser Console - Erros JavaScript
+### Useful Logs
+- `var/log/system.log` - General Magento logs
+- `var/log/exception.log` - PHP errors
+- Browser Console - JavaScript errors
 
-### Documentação Adicional
+### Additional Documentation
 - [Adobe Commerce DevDocs](https://devdocs.magento.com/)
 - [Adobe App Builder Docs](https://developer.adobe.com/app-builder/)
 - [OAuth Provider Documentation](../PROVIDER_EXAMPLES.md)
 
 ---
 
-**Desenvolvido por Webjump** - Tecnologia que transforma negócios
+**Developed by Webjump** - Technology that transforms business
