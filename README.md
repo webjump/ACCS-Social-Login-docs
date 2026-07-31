@@ -182,7 +182,7 @@ Two separate things are being configured here, and the extension treats them ind
    - **Commerce IMS Technical Account Email (SaaS)**
    - **Commerce IMS Organization ID (SaaS)**
    - **Commerce IMS API Key (SaaS)** — optional, defaults to the Client ID
-   - **Commerce IMS Scopes (SaaS)** — JSON array, e.g. `["AdobeID","openid"]`
+   - **Commerce IMS Scopes (SaaS)** — JSON array. **Must include `commerce.accs`**, or Commerce as a Cloud Service rejects every call even though IMS issued a valid token. Copy the scope list shown on the OAuth Server-to-Server credential in the Adobe Developer Console; it is normally `["openid","AdobeID","email","profile","additional_info.roles","additional_info.projectedProductContext","commerce.accs"]`
    - **Commerce IMS Environment (SaaS)** — typically `prod`
 
 ### 3.4 Configure Google OAuth
@@ -205,14 +205,23 @@ Fill in the Meta/Facebook credentials you obtained in Step 1.2:
   - Example: `https://your-app.adobeio-static.net`
   - This URL should already be automatically filled in
 
-### 3.7 Configure Log Level
+### 3.7 Configure CORS Origins
+
+- **CORS Origins**: the storefront origins allowed to call this extension. Strongly recommended for production
+  - Comma-separated list of origins — scheme and host only, no path: `https://www.example.com,https://example.com`
+  - `https://www.example.com` and `https://example.com` are different origins. List every domain your storefront is reachable on
+  - When set, browser requests from any other origin are refused with `403 Origin not allowed`, and the login result — which carries a real Adobe Commerce customer session token — is delivered only to these origins
+  - The **Widget Domain** is always allowed automatically; you don't need to list it
+  - Leaving this empty accepts requests from any origin and delivers the login result to whichever page opened the login popup
+
+### 3.8 Configure Log Level
 
 - **Log Level**: leave this at `info` for production
   - Use `debug` only while troubleshooting — it writes considerably more request detail to the activation logs
   - Set it back to `info` when you're done
   - Tokens and passwords are never logged at any level
 
-### 3.8 Save Settings
+### 3.9 Save Settings
 
 1. Review all settings
 2. Click **Save** or **Apply**
@@ -395,7 +404,12 @@ When a customer logs in with a social provider (Google or Facebook), the system 
 - A one-time-use authentication token (5-minute expiration) links the OAuth callback to the token-generation step
 - An internally signed token (HMAC) proves a customer-creation request actually came from a completed OAuth flow, not a direct call
 
-**4. Identity Binding**
+**4. Origin Allowlist**
+- With **CORS Origins** configured (Step 3.7), browser requests from any other origin are refused with `403`, and `Access-Control-Allow-Origin` is echoed back only for allowed origins
+- The login result — which carries a real Commerce customer session token — is delivered only to those origins, instead of to whichever page opened the login popup
+- The **Widget Domain** is allowed implicitly, since the OAuth callback page is served from there and calls these same actions
+
+**5. Identity Binding**
 
 The extension's actions are public web endpoints — they have to be, because they're called by your storefront and by the OAuth providers' redirects. What protects them is that every step is bound to the identity the provider actually verified:
 
@@ -440,6 +454,7 @@ For production, make sure to:
 **Adobe Commerce Integration:**
 - Secure connections (HTTPS only)
 - Official API authentication (OAuth 1.0a for PaaS, IMS for SaaS)
+- **CORS Origins** filled in with every storefront domain that hosts the widget (Step 3.7) — this is what restricts who can call the actions and who receives the session token
 - The **Customers** ACL resource enabled on the integration/technical account used
 - Keep the extension's internal secrets (Internal Authentication Secret, Customer Password Encryption Key) stable — rotating the Customer Password Encryption Key invalidates every stored customer credential, requiring affected customers to log in again to get a new one issued
 - Keep **Log Level** at `info` — `debug` is for troubleshooting only and writes far more request detail to the activation logs
@@ -455,16 +470,16 @@ For production, make sure to:
 ### Common Error Codes
 
 **401**: Authentication failed — the authentication token is invalid, expired, already used, or was issued for a different email address; or the customer wasn't found in Commerce
-**403**: The social provider hasn't verified the email address on that account, so it can't be matched to a Commerce customer
+**403 `EMAIL_NOT_VERIFIED`**: the social provider hasn't verified the email address on that account, so it can't be matched to a Commerce customer
+**403 Origin not allowed**: the request came from a browser origin that isn't in **CORS Origins** — see [CORS Error](#problem-cors-error)
 **409 `ACCOUNT_LINK_REQUIRED`**: the email already has a regular Adobe Commerce account that wasn't created by this extension — see [this account already exists](#problem-this-email-already-has-an-adobe-commerce-account)
 **500**: Commerce configuration missing (base URL, credentials, or internal secrets not set)
 
 ### Problem: CORS Error
 
-CORS errors are unusual for this extension, since Adobe I/O Runtime sets the required header automatically for its web actions. If you do see one:
-
 **Possible causes and solutions**:
-- **Incorrect protocol**: Make sure to use `https://` in domains you reference from the widget
+- **Origin missing from the allowlist**: if you filled in **CORS Origins**, every storefront domain that hosts the widget must be listed there, or its requests are refused with `403 Origin not allowed`. Add the missing origin (scheme and host, e.g. `https://www.example.com`) and save. Leaving the field empty accepts any origin
+- **Incorrect protocol**: Make sure to use `https://` in domains you reference from the widget, and that the origin you list matches exactly (`https://www.example.com` and `https://example.com` are different origins)
 - **Stale deployment**: Confirm the extension is up to date and reinstall/reconfigure if needed
 - **Browser extension or proxy interfering**: Test in a clean browser profile
 

@@ -9,12 +9,11 @@ This complete module for Adobe Commerce lets you configure and manage the Social
 - **Provider Selection**: Choose which OAuth providers to enable:
   - Google
   - Meta/Facebook
-  - LinkedIn
-  - PayPal
-  - Apple
-  - Twitter
-  - Pinterest
-  - Instagram
+
+  These are the two providers the Social Login extension implements. No other
+  provider is available: the extension has OAuth actions for Google and Meta
+  only, so enabling anything else would render a button that cannot complete a
+  login.
 
 ### 🎨 Visual Customization
 - **Themes**: Light, Dark, or Default
@@ -99,14 +98,10 @@ Go to: **Admin Panel > Stores > Configuration > Webjump > Social Login**
 
 ### 3. Select Providers
 Check the OAuth providers you want to enable:
-- ✅ Google (recommended)
+- ✅ Google
 - ✅ Meta/Facebook
-- ✅ LinkedIn
-- ⚠️ PayPal (requires additional configuration)
-- ⚠️ Apple (requires Apple Developer Program)
-- ⚠️ Twitter (requires OAuth 2.0 configuration)
-- ⚠️ Pinterest (requires Pinterest Developer Account)
-- ⚠️ Instagram (via Meta Developer)
+
+The extension supports these two providers and no others.
 
 ### 4. Customize Appearance
 - **Theme**: Choose between Light, Dark, or Default
