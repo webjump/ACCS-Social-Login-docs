@@ -113,15 +113,11 @@ class Login extends Template
      */
     public function getProviderDisplayName($provider)
     {
+        // Google and Meta only - those are the providers the Social Login
+        // extension has OAuth actions for.
         $displayNames = [
             'google' => __('Google'),
             'meta' => __('Facebook'),
-            'linkedin' => __('LinkedIn'),
-            'paypal' => __('PayPal'),
-            'apple' => __('Apple'),
-            'twitter' => __('Twitter'),
-            'pinterest' => __('Pinterest'),
-            'instagram' => __('Instagram'),
         ];
 
         return isset($displayNames[$provider]) ? $displayNames[$provider] : ucfirst($provider);

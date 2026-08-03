@@ -121,7 +121,7 @@
             </div>
 
             <div class="form-group">
-                <label for="password">Senha:</label>
+                <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
             </div>
 
@@ -136,7 +136,7 @@
         <!-- Social Login Widget - basic configuration -->
         <div id="social-login-widget"></div>
 
-        <!-- Container para mensagens -->
+        <!-- Message container -->
         <div id="messages" class="messages"></div>
     </div>
 
@@ -164,7 +164,7 @@
             buttonSize: 'medium',
             showLabels: true,
 
-            // Callback de sucesso
+            // Success callback
             onSuccess: function(data) {
                 console.log('Social login successful:', data);
 
@@ -172,9 +172,9 @@
                 const provider = data.socialProvider || data.provider || 'Social Provider';
                 const userEmail = data.user?.email || data.email || 'user';
 
-                // Mostrar mensagem de sucesso
+                // Show the success message
                 showMessage(
-                    `✅ Login realizado com sucesso via ${provider}!<br>
+                    `✅ Signed in successfully with ${provider}!<br>
                      Email: ${userEmail}`,
                     'success'
                 );
@@ -186,16 +186,16 @@
 
                 // Redirect after 2 seconds (simulated redirect)
                 setTimeout(() => {
-                    showMessage('🚀 Redirecionando para sua conta...', 'success');
+                    showMessage('🚀 Redirecting to your account...', 'success');
                     // window.location.href = '/customer/account/';
                 }, 2000);
             },
 
-            // Callback de erro
+            // Error callback
             onError: function(error) {
                 console.error('Social login failed:', error);
 
-                // Mostrar mensagem de erro
+                // Show the error message
                 showMessage(`❌ Login error: ${error.message}`, 'error');
             }
         });
@@ -226,7 +226,7 @@
             messageDiv.className = 'message ' + type;
             messageDiv.innerHTML = text;
 
-            // Limpar mensagens anteriores e adicionar nova
+            // Clear previous messages and add the new one
             messagesContainer.innerHTML = '';
             messagesContainer.appendChild(messageDiv);
 

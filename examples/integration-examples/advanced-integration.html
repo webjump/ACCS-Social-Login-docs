@@ -260,7 +260,7 @@
                 <div class="form-group">
                     <div class="checkbox-item">
                         <input type="checkbox" id="show-labels" checked>
-                        <label for="show-labels">Mostrar Labels dos Providers</label>
+                        <label for="show-labels">Show provider labels</label>
                     </div>
                 </div>
 
@@ -275,7 +275,7 @@
             <div id="config-status"></div>
         </div>
 
-        <!-- Painel de Login -->
+        <!-- Login panel -->
         <div class="login-panel">
             <h1 class="login-title">Adobe Commerce Login</h1>
 
@@ -290,7 +290,7 @@
                 </div>
             </div>
 
-            <!-- Container para mensagens -->
+            <!-- Message container -->
             <div id="messages" class="messages"></div>
 
             <!-- Simulated standard login form -->
@@ -300,7 +300,7 @@
 
             <form onsubmit="handleTraditionalLogin(event)" style="margin-top: 20px;">
                 <div class="form-group">
-                    <input type="email" placeholder="Seu email" required
+                    <input type="email" placeholder="Your email" required
                            style="margin-bottom: 10px;" id="email-field">
                 </div>
                 <div class="form-group">
@@ -351,7 +351,7 @@
                 const config = getConfigFromForm();
 
                 if (config.providers.length === 0) {
-                    showConfigStatus('⚠️ Selecione pelo menos um provider', 'error');
+                    showConfigStatus('⚠️ Select at least one provider', 'error');
                     return;
                 }
 
@@ -364,7 +364,7 @@
                     container.innerHTML = '';
                 }
 
-                // Criar novo widget
+                // Create the new widget
                 currentWidget = new SocialLoginWidget({
                     containerId: 'social-login-widget',
                     apiEndpoint: config.apiEndpoint,
@@ -381,7 +381,7 @@
                                            data.socialProvider.slice(1);
 
                         showMessage(
-                            `✅ <strong>Login realizado com sucesso!</strong><br>
+                            `✅ <strong>Signed in successfully!</strong><br>
                              Provider: ${providerName}<br>
                              Email: ${data.user.email}<br>
                              Action: ${data.action === 'created' ? 'Account created' : 'Signed in'}`,
@@ -396,9 +396,9 @@
                         // Simular redirecionamento
                         setTimeout(() => {
                             if (config.redirectUrl) {
-                                showMessage(`🚀 Redirecionando para: ${config.redirectUrl}`, 'info');
+                                showMessage(`🚀 Redirecting to: ${config.redirectUrl}`, 'info');
                             } else {
-                                showMessage('🚀 Redirecionando para conta do cliente...', 'info');
+                                showMessage('🚀 Redirecting to the customer account...', 'info');
                             }
                         }, 2000);
                     },
@@ -450,14 +450,14 @@
             }
         }
 
-        // Mostrar mensagens no painel de login
+        // Show messages in the login panel
         function showMessage(text, type) {
             const messagesContainer = document.getElementById('messages');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message ' + type;
             messageDiv.innerHTML = text;
 
-            // Limitar a 3 mensagens
+            // Keep at most 3 messages
             while (messagesContainer.children.length >= 3) {
                 messagesContainer.removeChild(messagesContainer.firstChild);
             }
@@ -496,7 +496,7 @@
             }, 1000);
         }
 
-        // Mostrar mensagem inicial
+        // Show the initial message
         window.addEventListener('load', () => {
             const token = sessionStorage.getItem('customer_token');
             if (token) {

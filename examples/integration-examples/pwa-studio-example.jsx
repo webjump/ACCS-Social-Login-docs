@@ -69,7 +69,7 @@ const useSocialLogin = () => {
             let customerToken;
 
             if (data.action === 'created') {
-                // Criar novo cliente
+                // Create the new customer
                 const customerInput = {
                     email: data.user.email,
                     firstname: data.user.firstName || data.user.fullName.split(' ')[0] || 'Social',
@@ -82,7 +82,7 @@ const useSocialLogin = () => {
                     variables: { input: customerInput }
                 });
 
-                // Gerar token para o novo cliente
+                // Generate a token for the new customer
                 const tokenResponse = await generateToken({
                     variables: {
                         email: customerInput.email,
@@ -109,18 +109,18 @@ const useSocialLogin = () => {
                         await getCartDetails({ cartId });
                     } catch (error) {
                         console.warn('Cart merge failed:', error);
-                        // Criar novo cart se falhar
+                        // Create a new cart if this fails
                         await createCart();
                     }
                 }
 
                 addToast({
                     type: 'success',
-                    message: `Login realizado com sucesso via ${data.socialProvider}!`,
+                    message: `Signed in successfully with ${data.socialProvider}!`,
                     timeout: 5000
                 });
 
-                // Fechar modal de login se existir
+                // Close the login modal if there is one
                 if (typeof window !== 'undefined' && window.dispatchEvent) {
                     window.dispatchEvent(new Event('social-login-success'));
                 }
@@ -290,7 +290,7 @@ const SocialLoginWidget = (props) => {
         return null;
     }
 
-    // Estados de loading e erro
+    // Loading and error states
     if (configLoading || isLoading) {
         return (
             <div className={`${classes.container} ${className}`} {...restProps}>

@@ -65,7 +65,7 @@ require(['jquery', 'domReady!'], function($) {
             ? provider.charAt(0).toUpperCase() + provider.slice(1)
             : 'Social Provider';
 
-        showMessage('✅ Login realizado com sucesso via ' + providerName + '!', 'success');
+        showMessage('✅ Signed in successfully with ' + providerName + '!', 'success');
 
         // Store token if available
         if (data.token) {
