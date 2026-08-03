@@ -435,7 +435,16 @@ Google's sign-in pages sever the popup's link back to your storefront (`Cross-Or
 - Error messages come from a fixed list inside the extension, never from whoever made the request
 - The outcome is written once and read once, then deleted, and expires on its own after 10 minutes
 
-**6. Identity Binding**
+**6. Tolerance to Commerce being briefly unavailable**
+
+Commerce instances - PaaS and Cloud Service alike - occasionally answer a request with a gateway error or drop it. The extension retries such calls a few times before giving up, and never retries an answer Commerce gave on purpose (a permissions error, for instance), so a real misconfiguration still surfaces immediately instead of being masked.
+
+Two consequences worth knowing:
+
+- If a login fails because Commerce was unreachable, the shopper can simply click the provider button again - the extension does not burn the login attempt on a failure it didn't cause
+- The password the extension generates for a new social-login customer is stored **before** the account is created. That ordering is deliberate: if Commerce creates the account but the confirmation never comes back, the credential is already on file, so the shopper isn't locked out of social login for good
+
+**7. Identity Binding**
 
 The extension's actions are public web endpoints — they have to be, because they're called by your storefront and by the OAuth providers' redirects. What protects them is that every step is bound to the identity the provider actually verified:
 
