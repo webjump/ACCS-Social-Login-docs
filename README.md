@@ -1,6 +1,6 @@
-# ACCS Social Login docs
+# AI/R Social Login for Adobe Commerce
 
-# Installation Guide - Social Login for Adobe Commerce
+## Installation Guide
 
 This guide was created to help you install and configure the Social Login extension in your Adobe App Builder project through Adobe Exchange in a simple and straightforward way, without requiring advanced technical knowledge.
 
