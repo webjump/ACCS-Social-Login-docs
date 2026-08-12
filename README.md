@@ -133,7 +133,7 @@ Two separate things are being configured here, and the extension treats them ind
 - **Which Commerce flavor you have** comes from the endpoint you fill in — an **Adobe Commerce Base URL** means PaaS, a **Commerce as a Cloud Service API URL** plus **Instance ID** means SaaS. This determines the API paths used and which Commerce APIs are available at all.
 - **How the extension authenticates** comes from the credentials you fill in — OAuth 1.0a integration credentials, or an IMS technical account. IMS is also valid on **PaaS from Adobe Commerce 2.4.7+**; in that case the endpoints stay in the PaaS format.
 
-### 3.3-PaaS: Obtain Commerce OAuth credentials (Adobe Commerce Cloud / on-premises)
+### 3.3-PaaS: Obtain Commerce OAuth credentials (Adobe Commerce on Cloud Infrastructure or on-premises)
 
 - **Adobe Commerce Base URL**:
   - Example: `https://your-ecommerce.adobecommerce.com`
@@ -558,3 +558,12 @@ If all checklist items are checked, your Social Login extension is installed and
 
 **Tip**: Keep this guide saved for future reference. If you need to make changes or updates, you can access the extension settings in Adobe Exchange at any time.
 
+---
+
+## Trademarks
+
+Adobe, Adobe App Builder, Adobe Commerce, Adobe Developer Console, Adobe Exchange, and Magento are either registered trademarks or trademarks of Adobe in the United States and/or other countries.
+
+Google is a trademark of Google LLC. Facebook and Meta are trademarks of Meta Platforms, Inc.
+
+AI/R and Webjump are trademarks of their respective owner. This is a partner-authored offering; it is not an Adobe product and is not published by Adobe.
